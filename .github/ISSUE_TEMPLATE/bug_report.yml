@@ -1,0 +1,90 @@
+name: Bug report
+description: Report something that isn't working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out as much of this as you can, it makes the issue much faster to act on.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of what the bug is.
+      placeholder: When I try to convert a large PDF, the download never starts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: List the exact steps that trigger the bug.
+      placeholder: |
+        1. Go to the PDF compression tool
+        2. Upload a file larger than 20 MB
+        3. Click "Compress"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include any error messages or screenshots.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: Service Affected
+      options:
+        - Frontend
+        - Backend
+        - Both
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (if frontend)
+      placeholder: e.g. Chrome 128, Firefox 130
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      placeholder: e.g. Windows 11, macOS 15, Ubuntu 24.04
+    validations:
+      required: false
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node Version (if backend)
+      placeholder: e.g. 20.11.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: File type or size that triggered it, or anything else that might help.
+    validations:
+      required: false
