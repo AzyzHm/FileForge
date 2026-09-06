@@ -1,6 +1,29 @@
+import { useState } from "react";
 import { ImageConverterPanel } from "./components/ImageConverterPanel";
+import { PdfMergePanel } from "./components/PdfMergePanel";
+import { PdfSplitPanel } from "./components/PdfSplitPanel";
+import { ToolTabs } from "./components/ToolTabs";
+
+type ToolId = "images" | "pdf-merge" | "pdf-split";
+
+const TOOLS: { id: ToolId; label: string }[] = [
+  { id: "images", label: "Images" },
+  { id: "pdf-merge", label: "Merge PDFs" },
+  { id: "pdf-split", label: "Split PDF" },
+];
+
+const DESCRIPTIONS: Record<ToolId, string> = {
+  images:
+    "Convert images between PNG, JPG, and SVG. Everything runs in your browser, nothing is uploaded anywhere.",
+  "pdf-merge":
+    "Combine PDFs into one file, in the order you choose. Everything runs in your browser, nothing is uploaded anywhere.",
+  "pdf-split":
+    "Split a PDF into one file per page. Everything runs in your browser, nothing is uploaded anywhere.",
+};
 
 function App() {
+  const [activeTool, setActiveTool] = useState<ToolId>("images");
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-12">
@@ -9,13 +32,20 @@ function App() {
             FileForge
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Convert images between PNG, JPG, and SVG. Everything runs in your
-            browser, nothing is uploaded anywhere.
+            {DESCRIPTIONS[activeTool]}
           </p>
         </header>
 
-        <main className="flex-1">
-          <ImageConverterPanel />
+        <ToolTabs
+          tools={TOOLS}
+          activeId={activeTool}
+          onChange={(id) => setActiveTool(id as ToolId)}
+        />
+
+        <main className="mt-6 flex-1">
+          {activeTool === "images" && <ImageConverterPanel />}
+          {activeTool === "pdf-merge" && <PdfMergePanel />}
+          {activeTool === "pdf-split" && <PdfSplitPanel />}
         </main>
 
         <footer className="mt-12 text-xs text-slate-400 dark:text-slate-600">

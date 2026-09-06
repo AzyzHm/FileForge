@@ -1,6 +1,10 @@
-import { useEffect, useMemo } from "react";
 import { FormatSelect } from "./FormatSelect";
-import type { ConversionItem, ImageFormat } from "../types/conversion";
+import { useObjectUrl } from "../hooks/useObjectUrl";
+import type {
+  ConversionItem,
+  ConversionResult,
+  ImageFormat,
+} from "../types/conversion";
 
 interface ConversionItemRowProps {
   item: ConversionItem;
@@ -15,23 +19,34 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function DownloadLink({ result }: { result: ConversionResult }) {
+  const downloadUrl = useObjectUrl(result.blob);
+
+  if (!downloadUrl) {
+    return (
+      <span className="rounded-md px-3 py-1 text-sm text-slate-400">
+        Preparing…
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={downloadUrl}
+      download={result.fileName}
+      className="rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
+    >
+      Download
+    </a>
+  );
+}
+
 export function ConversionItemRow({
   item,
   onTargetFormatChange,
   onConvert,
   onRemove,
 }: ConversionItemRowProps) {
-  const downloadUrl = useMemo(
-    () => (item.result ? URL.createObjectURL(item.result.blob) : null),
-    [item.result],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-    };
-  }, [downloadUrl]);
-
   return (
     <li className="flex flex-col gap-3 border-b border-slate-200 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
       <div className="min-w-0 flex-1">
@@ -63,14 +78,8 @@ export function ConversionItemRow({
           disabled={item.status === "converting"}
         />
 
-        {item.status === "done" && downloadUrl ? (
-          <a
-            href={downloadUrl}
-            download={item.result?.fileName}
-            className="rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
-          >
-            Download
-          </a>
+        {item.status === "done" && item.result ? (
+          <DownloadLink result={item.result} />
         ) : (
           <button
             type="button"

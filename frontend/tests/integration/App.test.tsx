@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import App from "../../src/App";
+
+describe("App", () => {
+  it("shows the image converter by default", () => {
+    render(<App />);
+    expect(
+      screen.getByText(/convert images between png, jpg, and svg/i),
+    ).toBeInTheDocument();
+  });
+
+  it("switches to the merge PDFs panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Merge PDFs" }));
+    expect(screen.getByText(/drag pdfs here/i)).toBeInTheDocument();
+  });
+
+  it("switches to the split PDF panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Split PDF" }));
+    expect(screen.getByText(/drag a pdf here/i)).toBeInTheDocument();
+  });
+});
