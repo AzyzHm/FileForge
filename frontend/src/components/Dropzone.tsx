@@ -3,11 +3,17 @@ import { useCallback, useId, useRef, useState } from "react";
 interface DropzoneProps {
   onFiles: (files: FileList) => void;
   accept?: string;
+  multiple?: boolean;
+  label?: string;
+  helperText?: string;
 }
 
 export function Dropzone({
   onFiles,
   accept = "image/png,image/jpeg,image/svg+xml",
+  multiple = true,
+  label = "Drag images here, or",
+  helperText = "Works with PNG, JPG, and SVG files",
 }: DropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +55,7 @@ export function Dropzone({
       }`}
     >
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Drag images here, or{" "}
+        {label}{" "}
         <label
           htmlFor={inputId}
           className="cursor-pointer font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
@@ -57,14 +63,12 @@ export function Dropzone({
           browse your files
         </label>
       </p>
-      <p className="text-xs text-slate-400 dark:text-slate-500">
-        Works with PNG, JPG, and SVG files
-      </p>
+      <p className="text-xs text-slate-400 dark:text-slate-500">{helperText}</p>
       <input
         ref={inputRef}
         id={inputId}
         type="file"
-        multiple
+        multiple={multiple}
         accept={accept}
         onChange={handleChange}
         className="sr-only"
