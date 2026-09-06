@@ -6,7 +6,6 @@ const PDF_EXTENSION = ".pdf";
 export interface SplitPage {
   blob: Blob;
   fileName: string;
-  label: string;
 }
 
 export interface PageRange {
@@ -46,45 +45,29 @@ export function buildRangeFileName(
     : `${baseName}-pages-${range.start}-${range.end}${PDF_EXTENSION}`;
 }
 
-export function parsePageRanges(input: string, pageCount: number): PageRange[] {
-  const tokens = input
-    .split(",")
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  if (tokens.length === 0) {
-    throw new Error("Enter at least one page or page range.");
+function validateRanges(ranges: PageRange[], pageCount: number): void {
+  if (ranges.length === 0) {
+    throw new Error("Add at least one page range.");
   }
 
-  return tokens.map((token) => {
-    const rangeMatch = token.match(/^(\d+)\s*-\s*(\d+)$/);
-    const singleMatch = token.match(/^(\d+)$/);
-
-    let start: number;
-    let end: number;
-
-    if (rangeMatch) {
-      start = Number(rangeMatch[1]);
-      end = Number(rangeMatch[2]);
-    } else if (singleMatch) {
-      start = Number(singleMatch[1]);
-      end = start;
-    } else {
-      throw new Error(`"${token}" is not a valid page or page range.`);
-    }
-
-    if (start < 1 || end < start) {
-      throw new Error(`"${token}" is not a valid page or page range.`);
-    }
-
-    if (end > pageCount) {
+  for (const range of ranges) {
+    if (
+      !Number.isInteger(range.start) ||
+      !Number.isInteger(range.end) ||
+      range.start < 1 ||
+      range.end < range.start
+    ) {
       throw new Error(
-        `"${token}" goes beyond the document's ${pageCount} pages.`,
+        `"${range.start}-${range.end}" is not a valid page range.`,
       );
     }
 
-    return { start, end };
-  });
+    if (range.end > pageCount) {
+      throw new Error(
+        `Page ${range.end} is beyond the document's ${pageCount} pages.`,
+      );
+    }
+  }
 }
 
 async function loadPdf(file: File): Promise<PDFDocument> {
@@ -100,6 +83,11 @@ async function loadPdf(file: File): Promise<PDFDocument> {
 
 function toBlob(bytes: Uint8Array): Blob {
   return new Blob([bytes.slice().buffer as ArrayBuffer], { type: PDF_MIME });
+}
+
+export async function getPdfPageCount(file: File): Promise<number> {
+  const doc = await loadPdf(file);
+  return doc.getPageCount();
 }
 
 export async function mergePdfs(files: File[]): Promise<Blob> {
@@ -143,7 +131,6 @@ export async function splitPdf(file: File): Promise<SplitPage[]> {
     results.push({
       blob: toBlob(pageBytes),
       fileName: buildSplitFileName(file.name, index + 1, pageCount),
-      label: `Page ${index + 1}`,
     });
   }
 
@@ -152,11 +139,11 @@ export async function splitPdf(file: File): Promise<SplitPage[]> {
 
 export async function splitPdfByRanges(
   file: File,
-  rangesInput: string,
+  ranges: PageRange[],
 ): Promise<SplitPage[]> {
   const sourceDoc = await loadPdf(file);
   const pageCount = sourceDoc.getPageCount();
-  const ranges = parsePageRanges(rangesInput, pageCount);
+  validateRanges(ranges, pageCount);
 
   const results: SplitPage[] = [];
 
@@ -174,10 +161,6 @@ export async function splitPdfByRanges(
     results.push({
       blob: toBlob(rangeBytes),
       fileName: buildRangeFileName(file.name, range),
-      label:
-        range.start === range.end
-          ? `Page ${range.start}`
-          : `Pages ${range.start}-${range.end}`,
     });
   }
 

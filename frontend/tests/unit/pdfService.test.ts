@@ -3,9 +3,9 @@ import { PDFDocument } from "pdf-lib";
 import {
   buildRangeFileName,
   buildSplitFileName,
+  getPdfPageCount,
   isPdfFile,
   mergePdfs,
-  parsePageRanges,
   splitPdf,
   splitPdfByRanges,
 } from "../../src/services/pdfService";
@@ -36,6 +36,20 @@ describe("isPdfFile", () => {
   });
 });
 
+describe("getPdfPageCount", () => {
+  it("returns the number of pages in the document", async () => {
+    const file = await makePdfFile("report.pdf", 7);
+    await expect(getPdfPageCount(file)).resolves.toBe(7);
+  });
+
+  it("surfaces a helpful error for a corrupted file", async () => {
+    const badFile = new File(["not-a-pdf"], "broken.pdf", {
+      type: "application/pdf",
+    });
+    await expect(getPdfPageCount(badFile)).rejects.toThrow(/could not be read/);
+  });
+});
+
 describe("buildSplitFileName", () => {
   it("pads page numbers to match the width of the total page count", () => {
     expect(buildSplitFileName("report.pdf", 3, 12)).toBe("report-page-03.pdf");
@@ -43,6 +57,20 @@ describe("buildSplitFileName", () => {
 
   it("strips the .pdf extension before appending the page suffix", () => {
     expect(buildSplitFileName("report.pdf", 1, 5)).toBe("report-page-1.pdf");
+  });
+});
+
+describe("buildRangeFileName", () => {
+  it("uses a single page suffix when start and end match", () => {
+    expect(buildRangeFileName("report.pdf", { start: 4, end: 4 })).toBe(
+      "report-page-4.pdf",
+    );
+  });
+
+  it("uses a range suffix when start and end differ", () => {
+    expect(buildRangeFileName("report.pdf", { start: 1, end: 3 })).toBe(
+      "report-pages-1-3.pdf",
+    );
   });
 });
 
@@ -80,7 +108,7 @@ describe("splitPdf", () => {
     await expect(splitPdf(file)).rejects.toThrow(/only has one page/);
   });
 
-  it("produces one single-page PDF per page, in order", async () => {
+  it("produces one single-page PDF per page, named after the source file", async () => {
     const file = await makePdfFile("multi.pdf", 3);
 
     const pages = await splitPdf(file);
@@ -96,11 +124,6 @@ describe("splitPdf", () => {
       "multi-page-2.pdf",
       "multi-page-3.pdf",
     ]);
-    expect(pages.map((page) => page.label)).toEqual([
-      "Page 1",
-      "Page 2",
-      "Page 3",
-    ]);
   });
 
   it("surfaces a helpful error for a corrupted file", async () => {
@@ -111,58 +134,15 @@ describe("splitPdf", () => {
   });
 });
 
-describe("buildRangeFileName", () => {
-  it("uses a single page suffix when start and end match", () => {
-    expect(buildRangeFileName("report.pdf", { start: 4, end: 4 })).toBe(
-      "report-page-4.pdf",
-    );
-  });
-
-  it("uses a range suffix when start and end differ", () => {
-    expect(buildRangeFileName("report.pdf", { start: 1, end: 3 })).toBe(
-      "report-pages-1-3.pdf",
-    );
-  });
-});
-
-describe("parsePageRanges", () => {
-  it("parses a mix of single pages and ranges", () => {
-    expect(parsePageRanges("1-3, 5, 8-10", 12)).toEqual([
-      { start: 1, end: 3 },
-      { start: 5, end: 5 },
-      { start: 8, end: 10 },
-    ]);
-  });
-
-  it("tolerates extra whitespace around dashes and commas", () => {
-    expect(parsePageRanges(" 1 - 2 ,  4 ", 5)).toEqual([
-      { start: 1, end: 2 },
-      { start: 4, end: 4 },
-    ]);
-  });
-
-  it("rejects an empty input", () => {
-    expect(() => parsePageRanges("", 5)).toThrow(/at least one/);
-  });
-
-  it("rejects a malformed token", () => {
-    expect(() => parsePageRanges("a-b", 5)).toThrow(/not a valid/);
-  });
-
-  it("rejects a range where the end comes before the start", () => {
-    expect(() => parsePageRanges("5-3", 10)).toThrow(/not a valid/);
-  });
-
-  it("rejects a range that exceeds the document's page count", () => {
-    expect(() => parsePageRanges("1-20", 5)).toThrow(/beyond the document/);
-  });
-});
-
 describe("splitPdfByRanges", () => {
   it("produces one PDF per range, each with the requested page count", async () => {
     const file = await makePdfFile("report.pdf", 10);
 
-    const results = await splitPdfByRanges(file, "1-3, 5, 8-10");
+    const results = await splitPdfByRanges(file, [
+      { start: 1, end: 3 },
+      { start: 5, end: 5 },
+      { start: 8, end: 10 },
+    ]);
     expect(results).toHaveLength(3);
 
     const pageCounts = await Promise.all(
@@ -178,26 +158,35 @@ describe("splitPdfByRanges", () => {
       "report-page-5.pdf",
       "report-pages-8-10.pdf",
     ]);
-    expect(results.map((result) => result.label)).toEqual([
-      "Pages 1-3",
-      "Page 5",
-      "Pages 8-10",
-    ]);
   });
 
-  it("propagates a range validation error", async () => {
+  it("rejects an empty range list", async () => {
     const file = await makePdfFile("report.pdf", 5);
-    await expect(splitPdfByRanges(file, "1-20")).rejects.toThrow(
-      /beyond the document/,
+    await expect(splitPdfByRanges(file, [])).rejects.toThrow(
+      /at least one page range/,
     );
+  });
+
+  it("rejects a range where the end comes before the start", async () => {
+    const file = await makePdfFile("report.pdf", 5);
+    await expect(
+      splitPdfByRanges(file, [{ start: 4, end: 2 }]),
+    ).rejects.toThrow(/not a valid page range/);
+  });
+
+  it("rejects a range that exceeds the document's page count", async () => {
+    const file = await makePdfFile("report.pdf", 5);
+    await expect(
+      splitPdfByRanges(file, [{ start: 1, end: 20 }]),
+    ).rejects.toThrow(/beyond the document/);
   });
 
   it("surfaces a helpful error for a corrupted file", async () => {
     const badFile = new File(["not-a-pdf"], "broken.pdf", {
       type: "application/pdf",
     });
-    await expect(splitPdfByRanges(badFile, "1")).rejects.toThrow(
-      /could not be read/,
-    );
+    await expect(
+      splitPdfByRanges(badFile, [{ start: 1, end: 1 }]),
+    ).rejects.toThrow(/could not be read/);
   });
 });
