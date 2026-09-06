@@ -9,13 +9,22 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function parseInputNumber(value: string): number | "" {
+  if (value === "") return "";
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? "" : parsed;
+}
+
 export function PdfSplitPanel() {
   const {
     file,
+    pageCount,
     mode,
     setMode,
-    rangesInput,
-    setRangesInput,
+    rangeRows,
+    addRangeRow,
+    removeRangeRow,
+    updateRangeRow,
     status,
     error,
     pages,
@@ -30,9 +39,9 @@ export function PdfSplitPanel() {
     setWasSkipped(!accepted);
   };
 
+  const hasAtLeastOneRange = rangeRows.some((row) => row.from !== "");
   const canSplit =
-    status !== "processing" &&
-    (mode === "all" || rangesInput.trim().length > 0);
+    status !== "processing" && (mode === "all" || hasAtLeastOneRange);
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,6 +68,7 @@ export function PdfSplitPanel() {
               </p>
               <p className="text-xs text-slate-400">
                 {formatFileSize(file.size)}
+                {pageCount ? ` · ${pageCount} pages` : ""}
               </p>
             </div>
             <button
@@ -105,21 +115,80 @@ export function PdfSplitPanel() {
             </div>
 
             {mode === "range" && (
-              <div>
-                <label
-                  htmlFor="pdf-split-ranges"
-                  className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400"
+              <div className="flex flex-col gap-2">
+                {rangeRows.map((row, index) => (
+                  <div key={row.id} className="flex items-center gap-2">
+                    <span className="w-14 shrink-0 text-xs text-slate-500 dark:text-slate-400">
+                      Range {index + 1}
+                    </span>
+
+                    <label className="sr-only" htmlFor={`${row.id}-from`}>
+                      From page
+                    </label>
+                    <input
+                      id={`${row.id}-from`}
+                      type="number"
+                      min={1}
+                      max={pageCount ?? undefined}
+                      placeholder="From"
+                      value={row.from}
+                      onChange={(event) =>
+                        updateRangeRow(
+                          row.id,
+                          "from",
+                          parseInputNumber(event.target.value),
+                        )
+                      }
+                      className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800 focus:border-emerald-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    />
+
+                    <span className="text-xs text-slate-400">to</span>
+
+                    <label className="sr-only" htmlFor={`${row.id}-to`}>
+                      To page, optional
+                    </label>
+                    <input
+                      id={`${row.id}-to`}
+                      type="number"
+                      min={row.from === "" ? 1 : row.from}
+                      max={pageCount ?? undefined}
+                      placeholder={row.from === "" ? "To" : String(row.from)}
+                      value={row.to}
+                      onChange={(event) =>
+                        updateRangeRow(
+                          row.id,
+                          "to",
+                          parseInputNumber(event.target.value),
+                        )
+                      }
+                      className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800 focus:border-emerald-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => removeRangeRow(row.id)}
+                      disabled={rangeRows.length === 1}
+                      aria-label={`Remove range ${index + 1}`}
+                      className="text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addRangeRow}
+                  className="self-start text-xs font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
                 >
-                  Pages or ranges, separated by commas
-                </label>
-                <input
-                  id="pdf-split-ranges"
-                  type="text"
-                  value={rangesInput}
-                  onChange={(event) => setRangesInput(event.target.value)}
-                  placeholder="e.g. 1-3, 5, 8-10"
-                  className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-800 focus:border-emerald-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                />
+                  + Add another range
+                </button>
+
+                <p className="text-xs text-slate-400">
+                  {pageCount
+                    ? `This PDF has ${pageCount} pages. Leave "to" blank for a single page.`
+                    : 'Leave "to" blank to grab a single page.'}
+                </p>
               </div>
             )}
 
