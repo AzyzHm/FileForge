@@ -1,18 +1,38 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  getPdfPageCount,
   isPdfFile,
   splitPdf,
   splitPdfByRanges,
+  type PageRange,
   type SplitPage,
 } from "../services/pdfService";
 
 type SplitStatus = "idle" | "processing" | "done" | "error";
 export type SplitMode = "all" | "range";
 
+export interface RangeRow {
+  id: string;
+  from: number | "";
+  to: number | "";
+}
+
+function createId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+}
+
+function createEmptyRow(): RangeRow {
+  return { id: createId(), from: "", to: "" };
+}
+
 export function usePdfSplit() {
   const [file, setFile] = useState<File | null>(null);
+  const [pageCount, setPageCount] = useState<number | null>(null);
   const [mode, setModeState] = useState<SplitMode>("all");
-  const [rangesInput, setRangesInputState] = useState("");
+  const [rangeRows, setRangeRows] = useState<RangeRow[]>([createEmptyRow()]);
   const [status, setStatus] = useState<SplitStatus>("idle");
   const [error, setError] = useState<string | undefined>(undefined);
   const [pages, setPages] = useState<SplitPage[]>([]);
@@ -23,6 +43,23 @@ export function usePdfSplit() {
     setPages([]);
   }, []);
 
+  useEffect(() => {
+    if (!file) return;
+
+    let cancelled = false;
+    getPdfPageCount(file)
+      .then((count) => {
+        if (!cancelled) setPageCount(count);
+      })
+      .catch(() => {
+        if (!cancelled) setPageCount(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
+
   const setSourceFile = useCallback(
     (files: FileList | File[]): boolean => {
       const [candidate] = Array.from(files);
@@ -31,6 +68,8 @@ export function usePdfSplit() {
       }
 
       setFile(candidate);
+      setPageCount(null);
+      setRangeRows([createEmptyRow()]);
       clearResult();
       return true;
     },
@@ -45,9 +84,26 @@ export function usePdfSplit() {
     [clearResult],
   );
 
-  const setRangesInput = useCallback(
-    (value: string) => {
-      setRangesInputState(value);
+  const addRangeRow = useCallback(() => {
+    setRangeRows((prev) => [...prev, createEmptyRow()]);
+    clearResult();
+  }, [clearResult]);
+
+  const removeRangeRow = useCallback(
+    (id: string) => {
+      setRangeRows((prev) =>
+        prev.length > 1 ? prev.filter((row) => row.id !== id) : prev,
+      );
+      clearResult();
+    },
+    [clearResult],
+  );
+
+  const updateRangeRow = useCallback(
+    (id: string, field: "from" | "to", value: number | "") => {
+      setRangeRows((prev) =>
+        prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+      );
       clearResult();
     },
     [clearResult],
@@ -60,10 +116,20 @@ export function usePdfSplit() {
     setError(undefined);
 
     try {
-      const result =
-        mode === "all"
-          ? await splitPdf(file)
-          : await splitPdfByRanges(file, rangesInput);
+      let result: SplitPage[];
+
+      if (mode === "all") {
+        result = await splitPdf(file);
+      } else {
+        const ranges: PageRange[] = rangeRows
+          .filter((row) => row.from !== "")
+          .map((row) => ({
+            start: Number(row.from),
+            end: row.to === "" ? Number(row.from) : Number(row.to),
+          }));
+        result = await splitPdfByRanges(file, ranges);
+      }
+
       setPages(result);
       setStatus("done");
     } catch (err) {
@@ -71,21 +137,25 @@ export function usePdfSplit() {
       setError(message);
       setStatus("error");
     }
-  }, [file, mode, rangesInput]);
+  }, [file, mode, rangeRows]);
 
   const reset = useCallback(() => {
     setFile(null);
+    setPageCount(null);
     setModeState("all");
-    setRangesInputState("");
+    setRangeRows([createEmptyRow()]);
     clearResult();
   }, [clearResult]);
 
   return {
     file,
+    pageCount,
     mode,
     setMode,
-    rangesInput,
-    setRangesInput,
+    rangeRows,
+    addRangeRow,
+    removeRangeRow,
+    updateRangeRow,
     status,
     error,
     pages,

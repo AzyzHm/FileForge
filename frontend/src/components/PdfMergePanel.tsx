@@ -1,11 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Dropzone } from "./Dropzone";
 import { usePdfMerge } from "../hooks/usePdfMerge";
+import { useObjectUrl } from "../hooks/useObjectUrl";
+
+interface MergeResult {
+  blob: Blob;
+  fileName: string;
+}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function MergeDownloadLink({ result }: { result: MergeResult }) {
+  const downloadUrl = useObjectUrl(result.blob);
+
+  if (!downloadUrl) {
+    return <span className="text-sm text-slate-400">Preparing…</span>;
+  }
+
+  return (
+    <a
+      href={downloadUrl}
+      download={result.fileName}
+      className="inline-block rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
+    >
+      Download {result.fileName}
+    </a>
+  );
 }
 
 export function PdfMergePanel() {
@@ -26,17 +50,6 @@ export function PdfMergePanel() {
     const added = addFiles(files);
     setSkippedCount(files.length - added);
   };
-
-  const downloadUrl = useMemo(
-    () => (result ? URL.createObjectURL(result.blob) : null),
-    [result],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-    };
-  }, [downloadUrl]);
 
   const canMerge = items.length >= 2 && status !== "processing";
 
@@ -134,15 +147,9 @@ export function PdfMergePanel() {
             </p>
           )}
 
-          {status === "done" && downloadUrl && result && (
+          {status === "done" && result && (
             <div className="border-t border-slate-200 px-4 py-3 dark:border-slate-800">
-              <a
-                href={downloadUrl}
-                download={result.fileName}
-                className="inline-block rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
-              >
-                Download {result.fileName}
-              </a>
+              <MergeDownloadLink result={result} />
             </div>
           )}
         </div>
