@@ -11,6 +11,14 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("switches to the compress images panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Compress" }));
+    expect(
+      screen.getByText(/drag images here to compress/i),
+    ).toBeInTheDocument();
+  });
+
   it("switches to the merge PDFs panel", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("tab", { name: "Merge PDFs" }));
