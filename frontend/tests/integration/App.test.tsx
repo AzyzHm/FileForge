@@ -19,6 +19,14 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("switches to the remove background panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Remove BG" }));
+    expect(
+      screen.getByText(/drag photos here to remove the background/i),
+    ).toBeInTheDocument();
+  });
+
   it("switches to the merge PDFs panel", async () => {
     render(<App />);
     await userEvent.click(screen.getByRole("tab", { name: "Merge PDFs" }));
