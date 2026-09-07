@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { BackgroundRemovalPanel } from "./components/BackgroundRemovalPanel";
 import { CompressionPanel } from "./components/CompressionPanel";
 import { ImageConverterPanel } from "./components/ImageConverterPanel";
 import { PdfMergePanel } from "./components/PdfMergePanel";
 import { PdfSplitPanel } from "./components/PdfSplitPanel";
 import { ToolTabs } from "./components/ToolTabs";
 
-type ToolId = "images" | "compress" | "pdf-merge" | "pdf-split";
+type ToolId = "images" | "compress" | "remove-bg" | "pdf-merge" | "pdf-split";
 
 const TOOLS: { id: ToolId; label: string }[] = [
   { id: "images", label: "Images" },
   { id: "compress", label: "Compress" },
+  { id: "remove-bg", label: "Remove BG" },
   { id: "pdf-merge", label: "Merge PDFs" },
   { id: "pdf-split", label: "Split PDF" },
 ];
@@ -19,6 +21,8 @@ const DESCRIPTIONS: Record<ToolId, string> = {
     "Convert images between PNG, JPG, and SVG. Everything runs in your browser, nothing is uploaded anywhere.",
   compress:
     "Shrink PNG and JPG file sizes. Everything runs in your browser, nothing is uploaded anywhere.",
+  "remove-bg":
+    "Remove the background from a photo using an on-device AI model. Everything runs in your browser, nothing is uploaded anywhere.",
   "pdf-merge":
     "Combine PDFs into one file, in the order you choose. Everything runs in your browser, nothing is uploaded anywhere.",
   "pdf-split":
@@ -49,6 +53,7 @@ function App() {
         <main className="mt-6 flex-1">
           {activeTool === "images" && <ImageConverterPanel />}
           {activeTool === "compress" && <CompressionPanel />}
+          {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
           {activeTool === "pdf-merge" && <PdfMergePanel />}
           {activeTool === "pdf-split" && <PdfSplitPanel />}
         </main>
