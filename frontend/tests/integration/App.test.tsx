@@ -38,4 +38,10 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Split PDF" }));
     expect(screen.getByText(/drag a pdf here/i)).toBeInTheDocument();
   });
+
+  it("switches to the word to pdf panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Word to PDF" }));
+    expect(screen.getByText(/drag word documents here/i)).toBeInTheDocument();
+  });
 });

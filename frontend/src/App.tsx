@@ -5,8 +5,15 @@ import { ImageConverterPanel } from "./components/ImageConverterPanel";
 import { PdfMergePanel } from "./components/PdfMergePanel";
 import { PdfSplitPanel } from "./components/PdfSplitPanel";
 import { ToolTabs } from "./components/ToolTabs";
+import { WordToPdfPanel } from "./components/WordToPdfPanel";
 
-type ToolId = "images" | "compress" | "remove-bg" | "pdf-merge" | "pdf-split";
+type ToolId =
+  | "images"
+  | "compress"
+  | "remove-bg"
+  | "pdf-merge"
+  | "pdf-split"
+  | "word-to-pdf";
 
 const TOOLS: { id: ToolId; label: string }[] = [
   { id: "images", label: "Images" },
@@ -14,6 +21,7 @@ const TOOLS: { id: ToolId; label: string }[] = [
   { id: "remove-bg", label: "Remove BG" },
   { id: "pdf-merge", label: "Merge PDFs" },
   { id: "pdf-split", label: "Split PDF" },
+  { id: "word-to-pdf", label: "Word to PDF" },
 ];
 
 const DESCRIPTIONS: Record<ToolId, string> = {
@@ -27,6 +35,8 @@ const DESCRIPTIONS: Record<ToolId, string> = {
     "Combine PDFs into one file, in the order you choose. Everything runs in your browser, nothing is uploaded anywhere.",
   "pdf-split":
     "Split a PDF into one file per page. Everything runs in your browser, nothing is uploaded anywhere.",
+  "word-to-pdf":
+    "Convert a Word document to PDF using your browser's print dialog. Everything runs in your browser, nothing is uploaded anywhere.",
 };
 
 function App() {
@@ -56,6 +66,7 @@ function App() {
           {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
           {activeTool === "pdf-merge" && <PdfMergePanel />}
           {activeTool === "pdf-split" && <PdfSplitPanel />}
+          {activeTool === "word-to-pdf" && <WordToPdfPanel />}
         </main>
 
         <footer className="mt-12 text-xs text-slate-400 dark:text-slate-600">
