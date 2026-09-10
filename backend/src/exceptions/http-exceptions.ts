@@ -23,3 +23,15 @@ export class UnsupportedMediaTypeException extends AppError {
     super(message, 415, true, details);
   }
 }
+
+export class ServiceUnavailableException extends AppError {
+  constructor(message = "Service unavailable", details?: unknown) {
+    super(message, 503, true, details);
+  }
+}
+
+export class GatewayTimeoutException extends AppError {
+  constructor(message = "Gateway timeout", details?: unknown) {
+    super(message, 504, true, details);
+  }
+}
