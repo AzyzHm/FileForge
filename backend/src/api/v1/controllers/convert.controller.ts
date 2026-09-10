@@ -1,39 +1,63 @@
 import { NextFunction, Request, Response } from "express";
-import { dummyConvert } from "../../../services/convert.service";
+import {
+  ConversionResult,
+  convertPdfToWord,
+  convertWordToPdf,
+  dummyConvert,
+} from "../../../services/convert.service";
 import { enqueueConversion } from "../../../services/queue.service";
 import { safeUnlink } from "../../../utils/safe-unlink";
 import { BadRequestException } from "../../../exceptions/http-exceptions";
 
+type ConversionFn = (
+  inputPath: string,
+  originalFilename: string,
+) => Promise<ConversionResult>;
+
 export class ConvertController {
-  dummy = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    const file = req.file;
-    if (!file) {
-      next(
-        new BadRequestException('No file was provided under the "file" field'),
-      );
-      return;
-    }
+  private runConversion(convert: ConversionFn) {
+    return async (
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> => {
+      const file = req.file;
+      if (!file) {
+        next(
+          new BadRequestException(
+            'No file was provided under the "file" field',
+          ),
+        );
+        return;
+      }
 
-    try {
-      const result = await enqueueConversion(() =>
-        dummyConvert(file.path, file.originalname),
-      );
+      try {
+        const result = await enqueueConversion(() =>
+          convert(file.path, file.originalname),
+        );
 
-      res.download(result.outputPath, result.outputFilename, (downloadErr) => {
-        void safeUnlink(file.path);
-        void safeUnlink(result.outputPath);
+        res.download(
+          result.outputPath,
+          result.outputFilename,
+          (downloadErr) => {
+            void safeUnlink(file.path);
+            void safeUnlink(result.outputPath);
 
-        if (downloadErr && !res.headersSent) {
-          next(downloadErr);
-        }
-      });
-    } catch (err) {
-      await safeUnlink(file.path);
-      next(err);
-    }
-  };
+            if (downloadErr && !res.headersSent) {
+              next(downloadErr);
+            }
+          },
+        );
+      } catch (err) {
+        await safeUnlink(file.path);
+        next(err);
+      }
+    };
+  }
+
+  dummy = this.runConversion(dummyConvert);
+
+  wordToPdf = this.runConversion(convertWordToPdf);
+
+  pdfToWord = this.runConversion(convertPdfToWord);
 }

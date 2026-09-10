@@ -6,5 +6,15 @@ const router = Router();
 const convertController = new ConvertController();
 
 router.post("/dummy", uploadSingleFile("file"), convertController.dummy);
+router.post(
+  "/word-to-pdf",
+  uploadSingleFile("file"),
+  convertController.wordToPdf,
+);
+router.post(
+  "/pdf-to-word",
+  uploadSingleFile("file"),
+  convertController.pdfToWord,
+);
 
 export default router;
