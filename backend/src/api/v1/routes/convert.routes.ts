@@ -16,5 +16,10 @@ router.post(
   uploadSingleFile("file"),
   convertController.pdfToWord,
 );
+router.post(
+  "/compress-pdf",
+  uploadSingleFile("file"),
+  convertController.compressPdf,
+);
 
 export default router;
