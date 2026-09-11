@@ -18,6 +18,7 @@ const LOG_LEVELS: readonly LogLevel[] = [
 const DEFAULT_PORT = 3000;
 const DEFAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
 const DEFAULT_LIBREOFFICE_TIMEOUT_MS = 60_000;
+const DEFAULT_GHOSTSCRIPT_TIMEOUT_MS = 60_000;
 
 function readNodeEnv(): NodeEnv {
   const raw = process.env.NODE_ENV;
@@ -59,6 +60,11 @@ export const env = {
   libreofficeTimeoutMs: readPositiveInt(
     "LIBREOFFICE_TIMEOUT_MS",
     DEFAULT_LIBREOFFICE_TIMEOUT_MS,
+  ),
+  ghostscriptBinPath: process.env.GHOSTSCRIPT_BIN_PATH,
+  ghostscriptTimeoutMs: readPositiveInt(
+    "GHOSTSCRIPT_TIMEOUT_MS",
+    DEFAULT_GHOSTSCRIPT_TIMEOUT_MS,
   ),
   isProduction: nodeEnv === "production",
   isTest: nodeEnv === "test",

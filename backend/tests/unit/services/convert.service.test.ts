@@ -1,20 +1,36 @@
 import os from "os";
 import path from "path";
 import { promises as fs } from "fs";
-import { UnsupportedMediaTypeException } from "../../../src/exceptions/http-exceptions";
+import {
+  BadRequestException,
+  UnsupportedMediaTypeException,
+} from "../../../src/exceptions/http-exceptions";
 
 jest.mock("../../../src/services/libreoffice.service", () => ({
   convertWithLibreOffice: jest.fn(),
 }));
 
+jest.mock("../../../src/services/ghostscript.service", () => {
+  const actual = jest.requireActual(
+    "../../../src/services/ghostscript.service",
+  );
+  return {
+    ...actual,
+    compressWithGhostscript: jest.fn(),
+  };
+});
+
 import { convertWithLibreOffice } from "../../../src/services/libreoffice.service";
+import { compressWithGhostscript } from "../../../src/services/ghostscript.service";
 import {
+  compressPdf,
   convertPdfToWord,
   convertWordToPdf,
   dummyConvert,
 } from "../../../src/services/convert.service";
 
 const mockedConvertWithLibreOffice = jest.mocked(convertWithLibreOffice);
+const mockedCompressWithGhostscript = jest.mocked(compressWithGhostscript);
 
 describe("convert.service dummyConvert", () => {
   const tmpInputs: string[] = [];
@@ -182,5 +198,109 @@ describe("convert.service convertPdfToWord", () => {
     );
     expect(result.outputFilename.endsWith(".docx")).toBe(true);
     expect(result.outputBytes).toBe(convertedBuffer.byteLength);
+  });
+});
+
+describe("convert.service compressPdf", () => {
+  const tmpInputs: string[] = [];
+  const tmpOutputs: string[] = [];
+
+  beforeEach(() => {
+    mockedCompressWithGhostscript.mockReset();
+  });
+
+  afterEach(async () => {
+    await Promise.all(
+      [...tmpInputs, ...tmpOutputs].map((filePath) =>
+        fs.unlink(filePath).catch(() => undefined),
+      ),
+    );
+    tmpInputs.length = 0;
+    tmpOutputs.length = 0;
+  });
+
+  it("rejects non-pdf extensions before touching the filesystem", async () => {
+    await expect(
+      compressPdf("/does/not/matter.docx", "original.docx"),
+    ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
+    expect(mockedCompressWithGhostscript).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid quality option before touching the filesystem", async () => {
+    await expect(
+      compressPdf("/does/not/matter.pdf", "original.pdf", {
+        quality: "ultra",
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(mockedCompressWithGhostscript).not.toHaveBeenCalled();
+  });
+
+  it("defaults to ebook quality when none is provided", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-compress-${Date.now()}.pdf`,
+    );
+    await fs.writeFile(inputPath, "pretend original pdf bytes");
+    tmpInputs.push(inputPath);
+
+    mockedCompressWithGhostscript.mockImplementation(async ({ outputPath }) => {
+      await fs.writeFile(outputPath, "pretend smaller pdf bytes");
+    });
+
+    const result = await compressPdf(inputPath, "original.pdf");
+    tmpOutputs.push(result.outputPath);
+
+    expect(mockedCompressWithGhostscript).toHaveBeenCalledWith(
+      expect.objectContaining({ inputPath, quality: "ebook" }),
+    );
+    expect(result.outputFilename.endsWith(".pdf")).toBe(true);
+    expect(result.inputBytes).toBe(
+      Buffer.byteLength("pretend original pdf bytes"),
+    );
+    expect(result.outputBytes).toBe(
+      Buffer.byteLength("pretend smaller pdf bytes"),
+    );
+  });
+
+  it.each(["screen", "ebook", "printer", "prepress"] as const)(
+    "accepts the %s quality option and forwards it to ghostscript",
+    async (quality) => {
+      const inputPath = path.join(
+        os.tmpdir(),
+        `convert-service-compress-${quality}-${Date.now()}.pdf`,
+      );
+      await fs.writeFile(inputPath, "pretend original pdf bytes");
+      tmpInputs.push(inputPath);
+
+      mockedCompressWithGhostscript.mockImplementation(
+        async ({ outputPath }) => {
+          await fs.writeFile(outputPath, "pretend smaller pdf bytes");
+        },
+      );
+
+      const result = await compressPdf(inputPath, "original.pdf", {
+        quality,
+      });
+      tmpOutputs.push(result.outputPath);
+
+      expect(mockedCompressWithGhostscript).toHaveBeenCalledWith(
+        expect.objectContaining({ quality }),
+      );
+    },
+  );
+
+  it("propagates errors thrown by the Ghostscript service", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-compress-err-${Date.now()}.pdf`,
+    );
+    await fs.writeFile(inputPath, "pretend original pdf bytes");
+    tmpInputs.push(inputPath);
+
+    mockedCompressWithGhostscript.mockRejectedValue(new Error("gs exploded"));
+
+    await expect(compressPdf(inputPath, "original.pdf")).rejects.toThrow(
+      "gs exploded",
+    );
   });
 });
