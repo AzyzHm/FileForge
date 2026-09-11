@@ -4,13 +4,16 @@ import { promises as fs } from "fs";
 import request from "supertest";
 import { createApp } from "../../src/app";
 import { isSofficeAvailable } from "../setup/soffice-availability";
+import { isGhostscriptAvailable } from "../setup/gs-availability";
 
 const FIXTURES_DIR = path.join(__dirname, "..", "fixtures");
 const SAMPLE_DOCX = path.join(FIXTURES_DIR, "sample.docx");
 const SAMPLE_PDF = path.join(FIXTURES_DIR, "sample.pdf");
 const SAMPLE_TXT = path.join(FIXTURES_DIR, "sample.txt");
+const SAMPLE_HEAVY_PDF = path.join(FIXTURES_DIR, "sample-heavy.pdf");
 
 const LIBREOFFICE_CONVERSION_TIMEOUT_MS = 30_000;
+const GHOSTSCRIPT_CONVERSION_TIMEOUT_MS = 30_000;
 
 function bufferParser(
   res: NodeJS.ReadableStream,
@@ -234,4 +237,116 @@ describeIfSoffice("POST /api/v1/convert/pdf-to-word", () => {
     expect(response.status).toBe(400);
     expect(response.body.status).toBe("error");
   });
+});
+
+const gsAvailable = isGhostscriptAvailable();
+const describeIfGhostscript = gsAvailable ? describe : describe.skip;
+
+if (!gsAvailable) {
+  console.warn(
+    "Skipping Ghostscript-backed integration tests: no gs binary found on this machine or via GHOSTSCRIPT_BIN_PATH.",
+  );
+}
+
+describeIfGhostscript("POST /api/v1/convert/compress-pdf", () => {
+  it(
+    "compresses a real image-heavy pdf and streams back a smaller file",
+    async () => {
+      const app = createApp();
+      const originalBuffer = await fs.readFile(SAMPLE_HEAVY_PDF);
+
+      const response = await request(app)
+        .post("/api/v1/convert/compress-pdf")
+        .attach("file", originalBuffer, "sample-heavy.pdf")
+        .buffer(true)
+        .parse(bufferParser);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-disposition"]).toContain("attachment");
+      const compressedBuffer = response.body as Buffer;
+      expect(compressedBuffer.subarray(0, 4).toString("ascii")).toBe("%PDF");
+      expect(compressedBuffer.byteLength).toBeLessThan(
+        originalBuffer.byteLength,
+      );
+    },
+    GHOSTSCRIPT_CONVERSION_TIMEOUT_MS,
+  );
+
+  it(
+    "honors an explicit quality field on the multipart form",
+    async () => {
+      const app = createApp();
+      const originalBuffer = await fs.readFile(SAMPLE_HEAVY_PDF);
+
+      const response = await request(app)
+        .post("/api/v1/convert/compress-pdf")
+        .field("quality", "screen")
+        .attach("file", originalBuffer, "sample-heavy.pdf")
+        .buffer(true)
+        .parse(bufferParser);
+
+      expect(response.status).toBe(200);
+      const compressedBuffer = response.body as Buffer;
+      expect(compressedBuffer.subarray(0, 4).toString("ascii")).toBe("%PDF");
+    },
+    GHOSTSCRIPT_CONVERSION_TIMEOUT_MS,
+  );
+
+  it("rejects an invalid quality field with a 400", async () => {
+    const app = createApp();
+    const originalBuffer = await fs.readFile(SAMPLE_HEAVY_PDF);
+
+    const response = await request(app)
+      .post("/api/v1/convert/compress-pdf")
+      .field("quality", "ultra-max")
+      .attach("file", originalBuffer, "sample-heavy.pdf");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects a file with an unsupported extension with a 415", async () => {
+    const app = createApp();
+    const docxBuffer = await fs.readFile(SAMPLE_DOCX);
+
+    const response = await request(app)
+      .post("/api/v1/convert/compress-pdf")
+      .attach("file", docxBuffer, "sample.docx");
+
+    expect(response.status).toBe(415);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects a request with no file attached", async () => {
+    const app = createApp();
+
+    const response = await request(app).post("/api/v1/convert/compress-pdf");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
+  it(
+    "deletes both the uploaded input and generated output from /tmp after responding",
+    async () => {
+      const app = createApp();
+      const originalBuffer = await fs.readFile(SAMPLE_HEAVY_PDF);
+
+      const response = await request(app)
+        .post("/api/v1/convert/compress-pdf")
+        .attach("file", originalBuffer, "sample-heavy.pdf");
+
+      expect(response.status).toBe(200);
+
+      const disposition = response.headers["content-disposition"] as string;
+      const match = /filename="(.+?)"/.exec(disposition);
+      expect(match).not.toBeNull();
+
+      const outputPath = path.join(os.tmpdir(), (match as RegExpExecArray)[1]);
+
+      const wasDeleted = await waitUntilDeleted(outputPath);
+      expect(wasDeleted).toBe(true);
+    },
+    GHOSTSCRIPT_CONVERSION_TIMEOUT_MS,
+  );
 });
