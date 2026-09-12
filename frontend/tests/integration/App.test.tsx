@@ -44,4 +44,16 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Word to PDF" }));
     expect(screen.getByText(/drag word documents here/i)).toBeInTheDocument();
   });
+
+  it("switches to the pdf to word panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "PDF to Word" }));
+    expect(screen.getByText(/drag pdf files here/i)).toBeInTheDocument();
+  });
+
+  it("switches to the compress pdf panel", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("tab", { name: "Compress PDF" }));
+    expect(screen.getByText(/drag pdf files here/i)).toBeInTheDocument();
+  });
 });
