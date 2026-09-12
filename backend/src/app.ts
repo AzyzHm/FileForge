@@ -12,7 +12,9 @@ export function createApp(): Application {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: env.corsOrigin }));
+  app.use(
+    cors({ origin: env.corsOrigin, exposedHeaders: ["Content-Disposition"] }),
+  );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(pinoHttp({ logger, autoLogging: !env.isTest }));
