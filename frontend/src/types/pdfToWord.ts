@@ -1,14 +1,14 @@
 import type { ProcessingStatus } from "./compression";
 
-export interface WordToPdfResult {
+export interface PdfToWordResult {
   blob: Blob;
   filename: string;
 }
 
-export interface WordToPdfItem {
+export interface PdfToWordItem {
   id: string;
   file: File;
   status: ProcessingStatus;
-  result?: WordToPdfResult;
+  result?: PdfToWordResult;
   error?: string;
 }
