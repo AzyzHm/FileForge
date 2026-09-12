@@ -1,9 +1,15 @@
+import { PdfCompressionQualitySelect } from "./PdfCompressionQualitySelect";
 import { useObjectUrl } from "../hooks/useObjectUrl";
-import type { WordToPdfItem, WordToPdfResult } from "../types/wordToPdf";
+import type {
+  PdfCompressionItem,
+  PdfCompressionQuality,
+  PdfCompressionResult,
+} from "../types/pdfCompression";
 
-interface WordToPdfItemRowProps {
-  item: WordToPdfItem;
-  onConvert: (item: WordToPdfItem) => void;
+interface PdfCompressionItemRowProps {
+  item: PdfCompressionItem;
+  onQualityChange: (id: string, quality: PdfCompressionQuality) => void;
+  onCompress: (item: PdfCompressionItem) => void;
   onRemove: (id: string) => void;
 }
 
@@ -13,7 +19,13 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function DownloadLink({ result }: { result: WordToPdfResult }) {
+function formatReduction(originalSize: number, compressedSize: number): string {
+  if (originalSize <= 0) return "";
+  const reduction = Math.round((1 - compressedSize / originalSize) * 100);
+  return reduction > 0 ? `${reduction}% smaller` : "No size reduction";
+}
+
+function DownloadLink({ result }: { result: PdfCompressionResult }) {
   const downloadUrl = useObjectUrl(result.blob);
 
   if (!downloadUrl) {
@@ -30,16 +42,17 @@ function DownloadLink({ result }: { result: WordToPdfResult }) {
       download={result.filename}
       className="rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
     >
-      Download PDF
+      Download
     </a>
   );
 }
 
-export function WordToPdfItemRow({
+export function PdfCompressionItemRow({
   item,
-  onConvert,
+  onQualityChange,
+  onCompress,
   onRemove,
-}: WordToPdfItemRowProps) {
+}: PdfCompressionItemRowProps) {
   return (
     <li className="flex flex-col gap-3 border-b border-slate-200 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
       <div className="min-w-0 flex-1">
@@ -48,6 +61,17 @@ export function WordToPdfItemRow({
         </p>
         <p className="text-xs text-slate-400">
           {formatFileSize(item.file.size)}
+          {item.status === "done" && item.result && (
+            <>
+              {" "}
+              &rarr; {formatFileSize(item.result.compressedSize)} (
+              {formatReduction(
+                item.result.originalSize,
+                item.result.compressedSize,
+              )}
+              )
+            </>
+          )}
         </p>
         {item.status === "error" && (
           <p className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -57,20 +81,27 @@ export function WordToPdfItemRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <PdfCompressionQualitySelect
+          label={`Compression quality for ${item.file.name}`}
+          value={item.quality}
+          onChange={(quality) => onQualityChange(item.id, quality)}
+          disabled={item.status === "processing"}
+        />
+
         {item.status === "done" && item.result ? (
           <DownloadLink result={item.result} />
         ) : (
           <button
             type="button"
-            onClick={() => onConvert(item)}
+            onClick={() => onCompress(item)}
             disabled={item.status === "processing"}
             className="rounded-md bg-slate-800 px-3 py-1 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
           >
             {item.status === "processing"
-              ? "Converting…"
+              ? "Compressing…"
               : item.status === "error"
                 ? "Retry"
-                : "Convert"}
+                : "Compress"}
           </button>
         )}
 

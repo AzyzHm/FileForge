@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Dropzone } from "./Dropzone";
-import { WordToPdfItemRow } from "./WordToPdfItemRow";
-import { useWordToPdf } from "../hooks/useWordToPdf";
+import { PdfToWordItemRow } from "./PdfToWordItemRow";
+import { usePdfToWord } from "../hooks/usePdfToWord";
 
-export function WordToPdfPanel() {
+export function PdfToWordPanel() {
   const { items, addFiles, convertItem, convertAll, removeItem, reset } =
-    useWordToPdf();
+    usePdfToWord();
   const [skippedCount, setSkippedCount] = useState(0);
 
   const handleFiles = (files: FileList) => {
@@ -22,16 +22,16 @@ export function WordToPdfPanel() {
     <div className="flex flex-col gap-4">
       <Dropzone
         onFiles={handleFiles}
-        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        label="Drag Word documents here, or"
-        helperText="Uploaded to the FileForge server for a faithful, LibreOffice-rendered PDF."
+        accept=".pdf,application/pdf"
+        label="Drag PDF files here, or"
+        helperText="Uploaded to the FileForge server for conversion, since this needs more than the browser can do alone."
       />
 
       {skippedCount > 0 && (
         <p className="text-xs text-amber-600 dark:text-amber-400">
           {skippedCount === 1
-            ? "1 file was skipped because it is not a .docx file."
-            : `${skippedCount} files were skipped because they are not .docx files.`}
+            ? "1 file was skipped because it is not a PDF."
+            : `${skippedCount} files were skipped because they are not PDFs.`}
         </p>
       )}
 
@@ -61,7 +61,7 @@ export function WordToPdfPanel() {
           </div>
           <ul className="px-4">
             {items.map((item) => (
-              <WordToPdfItemRow
+              <PdfToWordItemRow
                 key={item.id}
                 item={item}
                 onConvert={(item) => void convertItem(item)}

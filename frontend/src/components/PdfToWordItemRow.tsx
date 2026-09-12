@@ -1,9 +1,9 @@
 import { useObjectUrl } from "../hooks/useObjectUrl";
-import type { WordToPdfItem, WordToPdfResult } from "../types/wordToPdf";
+import type { PdfToWordItem, PdfToWordResult } from "../types/pdfToWord";
 
-interface WordToPdfItemRowProps {
-  item: WordToPdfItem;
-  onConvert: (item: WordToPdfItem) => void;
+interface PdfToWordItemRowProps {
+  item: PdfToWordItem;
+  onConvert: (item: PdfToWordItem) => void;
   onRemove: (id: string) => void;
 }
 
@@ -13,7 +13,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function DownloadLink({ result }: { result: WordToPdfResult }) {
+function DownloadLink({ result }: { result: PdfToWordResult }) {
   const downloadUrl = useObjectUrl(result.blob);
 
   if (!downloadUrl) {
@@ -30,16 +30,16 @@ function DownloadLink({ result }: { result: WordToPdfResult }) {
       download={result.filename}
       className="rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
     >
-      Download PDF
+      Download
     </a>
   );
 }
 
-export function WordToPdfItemRow({
+export function PdfToWordItemRow({
   item,
   onConvert,
   onRemove,
-}: WordToPdfItemRowProps) {
+}: PdfToWordItemRowProps) {
   return (
     <li className="flex flex-col gap-3 border-b border-slate-200 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
       <div className="min-w-0 flex-1">
