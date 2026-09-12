@@ -2,8 +2,10 @@ import { useState } from "react";
 import { BackgroundRemovalPanel } from "./components/BackgroundRemovalPanel";
 import { CompressionPanel } from "./components/CompressionPanel";
 import { ImageConverterPanel } from "./components/ImageConverterPanel";
+import { PdfCompressionPanel } from "./components/PdfCompressionPanel";
 import { PdfMergePanel } from "./components/PdfMergePanel";
 import { PdfSplitPanel } from "./components/PdfSplitPanel";
+import { PdfToWordPanel } from "./components/PdfToWordPanel";
 import { ToolTabs } from "./components/ToolTabs";
 import { WordToPdfPanel } from "./components/WordToPdfPanel";
 
@@ -13,7 +15,9 @@ type ToolId =
   | "remove-bg"
   | "pdf-merge"
   | "pdf-split"
-  | "word-to-pdf";
+  | "word-to-pdf"
+  | "pdf-to-word"
+  | "compress-pdf";
 
 const TOOLS: { id: ToolId; label: string }[] = [
   { id: "images", label: "Images" },
@@ -22,6 +26,8 @@ const TOOLS: { id: ToolId; label: string }[] = [
   { id: "pdf-merge", label: "Merge PDFs" },
   { id: "pdf-split", label: "Split PDF" },
   { id: "word-to-pdf", label: "Word to PDF" },
+  { id: "pdf-to-word", label: "PDF to Word" },
+  { id: "compress-pdf", label: "Compress PDF" },
 ];
 
 const DESCRIPTIONS: Record<ToolId, string> = {
@@ -36,7 +42,30 @@ const DESCRIPTIONS: Record<ToolId, string> = {
   "pdf-split":
     "Split a PDF into one file per page. Everything runs in your browser, nothing is uploaded anywhere.",
   "word-to-pdf":
-    "Convert a Word document to PDF using your browser's print dialog. Everything runs in your browser, nothing is uploaded anywhere.",
+    "Convert a Word document to PDF using the FileForge server, for accurate, LibreOffice-rendered output.",
+  "pdf-to-word":
+    "Convert a PDF into an editable Word document, using the FileForge server.",
+  "compress-pdf":
+    "Shrink a PDF's file size using the FileForge server, with a choice of quality presets.",
+};
+
+const FOOTER_NOTES: Record<ToolId, string> = {
+  images:
+    "No files leave your device. FileForge processes everything locally in your browser.",
+  compress:
+    "No files leave your device. FileForge processes everything locally in your browser.",
+  "remove-bg":
+    "No files leave your device. FileForge processes everything locally in your browser.",
+  "pdf-merge":
+    "No files leave your device. FileForge processes everything locally in your browser.",
+  "pdf-split":
+    "No files leave your device. FileForge processes everything locally in your browser.",
+  "word-to-pdf":
+    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
+  "pdf-to-word":
+    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
+  "compress-pdf":
+    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
 };
 
 function App() {
@@ -67,11 +96,12 @@ function App() {
           {activeTool === "pdf-merge" && <PdfMergePanel />}
           {activeTool === "pdf-split" && <PdfSplitPanel />}
           {activeTool === "word-to-pdf" && <WordToPdfPanel />}
+          {activeTool === "pdf-to-word" && <PdfToWordPanel />}
+          {activeTool === "compress-pdf" && <PdfCompressionPanel />}
         </main>
 
         <footer className="mt-12 text-xs text-slate-400 dark:text-slate-600">
-          No files leave your device. FileForge processes everything locally in
-          your browser.
+          {FOOTER_NOTES[activeTool]}
         </footer>
       </div>
     </div>
