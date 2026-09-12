@@ -9,15 +9,11 @@ vi.mock("../../src/services/wordToPdfService", async () => {
   >("../../src/services/wordToPdfService");
   return {
     ...actual,
-    convertDocxToHtml: vi.fn(),
-    openPrintPreview: vi.fn(),
+    convertDocxToPdf: vi.fn(),
   };
 });
 
-import {
-  convertDocxToHtml,
-  openPrintPreview,
-} from "../../src/services/wordToPdfService";
+import { convertDocxToPdf } from "../../src/services/wordToPdfService";
 
 const DOCX_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -37,8 +33,7 @@ async function uploadFile(file: File, options?: { applyAccept?: boolean }) {
 
 describe("WordToPdfPanel", () => {
   beforeEach(() => {
-    vi.mocked(convertDocxToHtml).mockReset();
-    vi.mocked(openPrintPreview).mockReset();
+    vi.mocked(convertDocxToPdf).mockReset();
   });
 
   afterEach(() => {
@@ -64,79 +59,45 @@ describe("WordToPdfPanel", () => {
     expect(screen.queryByText("report.pdf")).not.toBeInTheDocument();
   });
 
-  it("converts a file and opens the print preview on request", async () => {
-    vi.mocked(convertDocxToHtml).mockResolvedValue({
-      html: "<p>Body</p>",
-      warnings: [],
+  it("converts a file on the server and shows a PDF download link", async () => {
+    const blob = new Blob(["%PDF-stub"]);
+    vi.mocked(convertDocxToPdf).mockResolvedValue({
+      blob,
+      filename: "report.pdf",
     });
-    vi.mocked(openPrintPreview).mockReturnValue(true);
 
     render(<WordToPdfPanel />);
     await uploadFile(makeFile("report.docx", DOCX_TYPE));
 
     await userEvent.click(screen.getByRole("button", { name: "Convert" }));
 
-    const printButton = await screen.findByRole("button", {
-      name: "Preview & print",
+    const downloadLink = await screen.findByRole("link", {
+      name: /download pdf/i,
     });
-    await userEvent.click(printButton);
-
-    expect(openPrintPreview).toHaveBeenCalledWith("<p>Body</p>", "report");
-  });
-
-  it("shows a warning note when the conversion had messages", async () => {
-    vi.mocked(convertDocxToHtml).mockResolvedValue({
-      html: "<p>Body</p>",
-      warnings: ["Unrecognized style 'Foo'"],
-    });
-
-    render(<WordToPdfPanel />);
-    await uploadFile(makeFile("report.docx", DOCX_TYPE));
-    await userEvent.click(screen.getByRole("button", { name: "Convert" }));
-
-    expect(await screen.findByText(/1 note/i)).toBeInTheDocument();
-  });
-
-  it("shows a popup-blocked message when the preview window cannot open", async () => {
-    vi.mocked(convertDocxToHtml).mockResolvedValue({
-      html: "<p>Body</p>",
-      warnings: [],
-    });
-    vi.mocked(openPrintPreview).mockReturnValue(false);
-
-    render(<WordToPdfPanel />);
-    await uploadFile(makeFile("report.docx", DOCX_TYPE));
-    await userEvent.click(screen.getByRole("button", { name: "Convert" }));
-
-    const printButton = await screen.findByRole("button", {
-      name: "Preview & print",
-    });
-    await userEvent.click(printButton);
-
-    expect(
-      await screen.findByText(/browser blocked the preview window/i),
-    ).toBeInTheDocument();
+    expect(downloadLink).toHaveAttribute("download", "report.pdf");
   });
 
   it("shows an error and a retry option when conversion fails", async () => {
-    vi.mocked(convertDocxToHtml).mockRejectedValue(
-      new Error("The file could not be converted."),
+    vi.mocked(convertDocxToPdf).mockRejectedValue(
+      new Error("The conversion timed out. Try a smaller file."),
     );
 
     render(<WordToPdfPanel />);
     await uploadFile(makeFile("report.docx", DOCX_TYPE));
+
     await userEvent.click(screen.getByRole("button", { name: "Convert" }));
 
     expect(
-      await screen.findByText("The file could not be converted."),
+      await screen.findByText("The conversion timed out. Try a smaller file."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("converts every queued file when 'Convert all' is clicked", async () => {
-    vi.mocked(convertDocxToHtml).mockResolvedValue({
-      html: "<p>Body</p>",
-      warnings: [],
+    const blob = new Blob(["%PDF-stub"]);
+    vi.mocked(convertDocxToPdf).mockResolvedValue({
+      blob,
+      filename: "report.pdf",
     });
 
     render(<WordToPdfPanel />);
@@ -147,10 +108,10 @@ describe("WordToPdfPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getAllByRole("button", { name: "Preview & print" }),
+        screen.getAllByRole("link", { name: /download pdf/i }),
       ).toHaveLength(2);
     });
-    expect(convertDocxToHtml).toHaveBeenCalledTimes(2);
+    expect(convertDocxToPdf).toHaveBeenCalledTimes(2);
   });
 
   it("clears the queue when 'Clear' is clicked", async () => {

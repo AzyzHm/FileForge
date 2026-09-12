@@ -12,6 +12,20 @@ describe("GET /health", () => {
   });
 });
 
+describe("CORS configuration", () => {
+  it("exposes the Content-Disposition header to cross-origin clients", async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .get("/health")
+      .set("Origin", "http://localhost:5173");
+
+    expect(response.headers["access-control-expose-headers"]).toContain(
+      "Content-Disposition",
+    );
+  });
+});
+
 describe("unknown routes", () => {
   it("returns a 404 with a structured error body", async () => {
     const app = createApp();
