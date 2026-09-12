@@ -1,15 +1,15 @@
 import { useCallback, useState } from "react";
-import { convertDocxToPdf, isDocxFile } from "../services/wordToPdfService";
+import { convertPdfToWord, isPdfFile } from "../services/pdfToWordService";
 import { createId } from "../utils/id";
-import type { WordToPdfItem } from "../types/wordToPdf";
+import type { PdfToWordItem } from "../types/pdfToWord";
 
-export function useWordToPdf() {
-  const [items, setItems] = useState<WordToPdfItem[]>([]);
+export function usePdfToWord() {
+  const [items, setItems] = useState<PdfToWordItem[]>([]);
 
   const addFiles = useCallback((files: FileList | File[]): number => {
     const incoming = Array.from(files)
-      .filter((file) => isDocxFile(file))
-      .map((file): WordToPdfItem => ({
+      .filter((file) => isPdfFile(file))
+      .map((file): PdfToWordItem => ({
         id: createId(),
         file,
         status: "idle",
@@ -25,7 +25,7 @@ export function useWordToPdf() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const convertItem = useCallback(async (item: WordToPdfItem) => {
+  const convertItem = useCallback(async (item: PdfToWordItem) => {
     const { id, file } = item;
 
     setItems((prev) =>
@@ -42,7 +42,7 @@ export function useWordToPdf() {
     );
 
     try {
-      const result = await convertDocxToPdf(file);
+      const result = await convertPdfToWord(file);
       setItems((prev) =>
         prev.map((current) =>
           current.id === id ? { ...current, status: "done", result } : current,
