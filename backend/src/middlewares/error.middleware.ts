@@ -19,11 +19,12 @@ export function errorMiddleware(
   const isAppError = err instanceof AppError;
   const statusCode = isAppError ? err.statusCode : 500;
   const message = isAppError ? err.message : "Internal server error";
+  const logContext = { err, path: req.originalUrl, method: req.method };
 
   if (!isAppError || statusCode >= 500) {
-    logger.error({ err, path: req.originalUrl, method: req.method }, message);
+    logger.error(logContext, message);
   } else {
-    logger.warn({ path: req.originalUrl, method: req.method }, message);
+    logger.warn(logContext, message);
   }
 
   const body: ErrorResponseBody = {
