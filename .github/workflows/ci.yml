@@ -9,9 +9,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend-quality:
-    name: Frontend / Lint, typecheck, format
+    name: Frontend / Lint, typecheck, format, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,6 +42,9 @@ jobs:
 
       - name: Check formatting
         run: npm run format:check
+
+      - name: Build
+        run: npm run build
 
   frontend-test:
     name: Frontend / Tests
@@ -63,7 +70,7 @@ jobs:
         run: npm test
 
   backend-quality:
-    name: Backend / Lint, typecheck, format
+    name: Backend / Lint, typecheck, format, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -91,6 +98,9 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Build
+        run: npm run build
+
   backend-test:
     name: Backend / Tests
     runs-on: ubuntu-latest
@@ -107,6 +117,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: backend/package-lock.json
+
+      - name: Install LibreOffice and Ghostscript
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer ghostscript
 
       - name: Install dependencies
         run: npm ci

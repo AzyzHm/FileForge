@@ -2,6 +2,7 @@ import { convertWithOptions } from "libreoffice-convert";
 import {
   GatewayTimeoutException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from "../../../src/exceptions/http-exceptions";
 
 jest.mock("libreoffice-convert", () => ({
@@ -158,8 +159,10 @@ describe("libreoffice.service convertWithLibreOffice", () => {
     ).rejects.toBeInstanceOf(GatewayTimeoutException);
   });
 
-  it("rethrows unrecognized errors unchanged", async () => {
-    const unexpected = new Error("something else went wrong");
+  it("maps an unrecognized error, such as a corrupt or unsupported document, to UnprocessableEntityException", async () => {
+    const unexpected = new Error(
+      "Error calling soffice: Error: source file could not be loaded",
+    );
     mockedConvertWithOptions.mockImplementation(
       (_document, _format, _filter, _options, callback) => {
         callback(unexpected, Buffer.alloc(0));
@@ -172,6 +175,6 @@ describe("libreoffice.service convertWithLibreOffice", () => {
         fileName: "source.docx",
         targetFormat: "pdf",
       }),
-    ).rejects.toThrow("something else went wrong");
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 });

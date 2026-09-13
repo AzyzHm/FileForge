@@ -30,6 +30,18 @@ const PDF_IMPORT_FILTER_ARGS = ["--infilter=writer_pdf_import"];
 
 const DEFAULT_COMPRESS_QUALITY: GhostscriptQuality = "ebook";
 
+const FILE_SIGNATURES: Record<string, Buffer> = {
+  ".pdf": Buffer.from("%PDF-", "ascii"),
+  ".doc": Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+  ".docx": Buffer.from([0x50, 0x4b]),
+  ".odt": Buffer.from([0x50, 0x4b]),
+  ".rtf": Buffer.from("{\\rtf1", "ascii"),
+};
+
+const SIGNATURE_HEADER_BYTES = Math.max(
+  ...Object.values(FILE_SIGNATURES).map((signature) => signature.length),
+);
+
 export interface CompressPdfOptions {
   quality?: string;
 }
@@ -47,6 +59,35 @@ function assertAllowedExtension(
     throw new UnsupportedMediaTypeException(
       `Unsupported file type "${extension || "unknown"}". Expected one of: ${allowedExtensions.join(", ")}`,
     );
+  }
+}
+
+function assertValidSignature(filename: string, header: Buffer): void {
+  const extension = path.extname(filename).toLowerCase();
+  const signature = FILE_SIGNATURES[extension];
+  if (!signature) {
+    return;
+  }
+
+  const matches = header.subarray(0, signature.length).equals(signature);
+  if (!matches) {
+    throw new UnsupportedMediaTypeException(
+      `The file's content doesn't look like a valid ${extension} file. It may be renamed, empty, or corrupted.`,
+    );
+  }
+}
+
+async function readFileHeader(
+  filePath: string,
+  length: number,
+): Promise<Buffer> {
+  const handle = await fs.open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(length);
+    const { bytesRead } = await handle.read(buffer, 0, length, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
   }
 }
 
@@ -115,6 +156,8 @@ export async function convertWordToPdf(
   assertAllowedExtension(originalFilename, WORD_TO_PDF_EXTENSIONS);
 
   const inputBuffer = await fs.readFile(inputPath);
+  assertValidSignature(originalFilename, inputBuffer);
+
   const outputBuffer = await convertWithLibreOffice({
     document: inputBuffer,
     fileName: originalFilename,
@@ -144,6 +187,9 @@ export async function compressPdf(
   const quality = options.quality ?? DEFAULT_COMPRESS_QUALITY;
   assertValidQuality(quality);
 
+  const header = await readFileHeader(inputPath, SIGNATURE_HEADER_BYTES);
+  assertValidSignature(originalFilename, header);
+
   const inputStats = await fs.stat(inputPath);
   const { outputPath, outputFilename } = reserveOutputPath(".pdf");
 
@@ -170,6 +216,8 @@ export async function convertPdfToWord(
   assertAllowedExtension(originalFilename, PDF_TO_WORD_EXTENSIONS);
 
   const inputBuffer = await fs.readFile(inputPath);
+  assertValidSignature(originalFilename, inputBuffer);
+
   const outputBuffer = await convertWithLibreOffice({
     document: inputBuffer,
     fileName: originalFilename,

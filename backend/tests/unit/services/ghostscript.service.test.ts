@@ -2,6 +2,7 @@ import { execFile } from "child_process";
 import {
   GatewayTimeoutException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from "../../../src/exceptions/http-exceptions";
 
 jest.mock("child_process", () => ({
@@ -179,7 +180,7 @@ describe("ghostscript.service compressWithGhostscript", () => {
     ).rejects.toBeInstanceOf(GatewayTimeoutException);
   });
 
-  it("rethrows unrecognized errors, such as a non-zero exit from a corrupt PDF, unchanged", async () => {
+  it("maps a non-zero exit from a corrupt PDF to UnprocessableEntityException", async () => {
     const unexpected = Object.assign(new Error("Command failed"), {
       code: 1,
       killed: false,
@@ -192,6 +193,6 @@ describe("ghostscript.service compressWithGhostscript", () => {
         outputPath: "/tmp/out.pdf",
         quality: "ebook",
       }),
-    ).rejects.toThrow("Command failed");
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 });

@@ -4,7 +4,11 @@ import { env } from "../config/env";
 import {
   GatewayTimeoutException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from "../exceptions/http-exceptions";
+
+const CORRUPT_INPUT_MESSAGE =
+  "The file could not be compressed. It may be corrupted or not a valid PDF.";
 
 function execFileAsync(
   binary: string,
@@ -109,8 +113,7 @@ export async function compressWithGhostscript(
       if (isBinaryNotFoundError(err)) {
         continue;
       }
-
-      throw err;
+      throw new UnprocessableEntityException(CORRUPT_INPUT_MESSAGE);
     }
   }
 
@@ -119,6 +122,4 @@ export async function compressWithGhostscript(
       "Ghostscript is not installed or its binary path is misconfigured",
     );
   }
-
-  throw lastError;
 }

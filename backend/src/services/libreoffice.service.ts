@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import {
   GatewayTimeoutException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from "../exceptions/http-exceptions";
 
 const convertWithOptionsAsync = promisify(convertWithOptions);
@@ -76,7 +77,8 @@ export async function convertWithLibreOffice({
         "LibreOffice is not installed or its binary path is misconfigured",
       );
     }
-
-    throw err;
+    throw new UnprocessableEntityException(
+      "The file could not be converted. It may be corrupted or use formatting LibreOffice doesn't support.",
+    );
   }
 }

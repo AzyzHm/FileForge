@@ -32,7 +32,7 @@ Most processing happens directly in the browser. The backend only steps in for t
 **Frontend**
 - `React` + `TypeScript`, built with `Vite`
 - `Tailwind CSS`
-- `pdf-lib`, `@imgly/background-removal`, `browser-image-compression`, `mammoth.js` for client-side file processing
+- `pdf-lib`, `@imgly/background-removal`, `browser-image-compression` for client-side file processing
 
 **Backend**
 - `Node.js` + `Express`, written in TypeScript
@@ -63,6 +63,12 @@ Each service is self-contained and documented separately:
 2. Set up the backend: see [`backend/README.md`](./backend/README.md)
 
 The project currently runs locally only. Deployment instructions will be added once all features are working end to end.
+
+---
+
+## ⚠️ Known Limitations
+
+- **PDF to Word with Arabic, Hebrew, or other right-to-left text:** LibreOffice's PDF import filter reconstructs PDF text as many small, absolutely-positioned floating text boxes instead of normal flowing paragraphs. This happens with any PDF, but right-to-left and other complex-script content fragments far more heavily, sometimes into hundreds of overlapping text boxes on a single page. The resulting Word document can look messy and may be slow or unstable to open. This is a limitation of LibreOffice's PDF import itself, not something the FileForge backend controls. Until an alternative conversion path is built, PDF to Word gives the most reliable results on PDFs with primarily Latin-script text.
 
 ---
 

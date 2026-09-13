@@ -24,6 +24,12 @@ export class UnsupportedMediaTypeException extends AppError {
   }
 }
 
+export class UnprocessableEntityException extends AppError {
+  constructor(message = "Unprocessable entity", details?: unknown) {
+    super(message, 422, true, details);
+  }
+}
+
 export class ServiceUnavailableException extends AppError {
   constructor(message = "Service unavailable", details?: unknown) {
     super(message, 503, true, details);
