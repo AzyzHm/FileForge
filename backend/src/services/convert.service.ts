@@ -29,6 +29,7 @@ const PDF_COMPRESS_EXTENSIONS = [".pdf"];
 const PDF_IMPORT_FILTER_ARGS = ["--infilter=writer_pdf_import"];
 
 const DEFAULT_COMPRESS_QUALITY: GhostscriptQuality = "ebook";
+
 const FILE_SIGNATURES: Record<string, Buffer> = {
   ".pdf": Buffer.from("%PDF-", "ascii"),
   ".doc": Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
