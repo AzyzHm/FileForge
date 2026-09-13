@@ -6,6 +6,23 @@ import {
   UnsupportedMediaTypeException,
 } from "../../../src/exceptions/http-exceptions";
 
+const VALID_SIGNATURES: Record<string, Buffer> = {
+  ".pdf": Buffer.from("%PDF-1.4 pretend pdf bytes"),
+  ".doc": Buffer.concat([
+    Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+    Buffer.from(" pretend word document bytes"),
+  ]),
+  ".docx": Buffer.concat([
+    Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    Buffer.from(" pretend word document bytes"),
+  ]),
+  ".odt": Buffer.concat([
+    Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    Buffer.from(" pretend word document bytes"),
+  ]),
+  ".rtf": Buffer.from("{\\rtf1 pretend word document bytes"),
+};
+
 jest.mock("../../../src/services/libreoffice.service", () => ({
   convertWithLibreOffice: jest.fn(),
 }));
@@ -109,7 +126,7 @@ describe("convert.service convertWordToPdf", () => {
         os.tmpdir(),
         `convert-service-word-${Date.now()}${extension}`,
       );
-      await fs.writeFile(inputPath, "pretend word document bytes");
+      await fs.writeFile(inputPath, VALID_SIGNATURES[extension]);
       tmpInputs.push(inputPath);
 
       const convertedBuffer = Buffer.from("pretend pdf bytes");
@@ -137,7 +154,7 @@ describe("convert.service convertWordToPdf", () => {
       os.tmpdir(),
       `convert-service-word-err-${Date.now()}.docx`,
     );
-    await fs.writeFile(inputPath, "pretend word document bytes");
+    await fs.writeFile(inputPath, VALID_SIGNATURES[".docx"]);
     tmpInputs.push(inputPath);
 
     mockedConvertWithLibreOffice.mockRejectedValue(
@@ -147,6 +164,20 @@ describe("convert.service convertWordToPdf", () => {
     await expect(convertWordToPdf(inputPath, "original.docx")).rejects.toThrow(
       "soffice exploded",
     );
+  });
+
+  it("rejects a file whose content doesn't match its extension's signature", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-word-badsig-${Date.now()}.docx`,
+    );
+    await fs.writeFile(inputPath, "this is plain text, not a real docx");
+    tmpInputs.push(inputPath);
+
+    await expect(
+      convertWordToPdf(inputPath, "original.docx"),
+    ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
+    expect(mockedConvertWithLibreOffice).not.toHaveBeenCalled();
   });
 });
 
@@ -180,7 +211,7 @@ describe("convert.service convertPdfToWord", () => {
       os.tmpdir(),
       `convert-service-pdf-${Date.now()}.pdf`,
     );
-    await fs.writeFile(inputPath, "pretend pdf bytes");
+    await fs.writeFile(inputPath, VALID_SIGNATURES[".pdf"]);
     tmpInputs.push(inputPath);
 
     const convertedBuffer = Buffer.from("pretend docx bytes");
@@ -199,7 +230,23 @@ describe("convert.service convertPdfToWord", () => {
     expect(result.outputFilename.endsWith(".docx")).toBe(true);
     expect(result.outputBytes).toBe(convertedBuffer.byteLength);
   });
+
+  it("rejects a file whose content doesn't match a pdf's signature", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-pdf-badsig-${Date.now()}.pdf`,
+    );
+    await fs.writeFile(inputPath, "this is plain text, not a real pdf");
+    tmpInputs.push(inputPath);
+
+    await expect(
+      convertPdfToWord(inputPath, "original.pdf"),
+    ).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
+    expect(mockedConvertWithLibreOffice).not.toHaveBeenCalled();
+  });
 });
+
+const VALID_PDF_CONTENT = "%PDF-1.4 pretend original pdf bytes";
 
 describe("convert.service compressPdf", () => {
   const tmpInputs: string[] = [];
@@ -240,7 +287,7 @@ describe("convert.service compressPdf", () => {
       os.tmpdir(),
       `convert-service-compress-${Date.now()}.pdf`,
     );
-    await fs.writeFile(inputPath, "pretend original pdf bytes");
+    await fs.writeFile(inputPath, VALID_PDF_CONTENT);
     tmpInputs.push(inputPath);
 
     mockedCompressWithGhostscript.mockImplementation(async ({ outputPath }) => {
@@ -254,9 +301,7 @@ describe("convert.service compressPdf", () => {
       expect.objectContaining({ inputPath, quality: "ebook" }),
     );
     expect(result.outputFilename.endsWith(".pdf")).toBe(true);
-    expect(result.inputBytes).toBe(
-      Buffer.byteLength("pretend original pdf bytes"),
-    );
+    expect(result.inputBytes).toBe(Buffer.byteLength(VALID_PDF_CONTENT));
     expect(result.outputBytes).toBe(
       Buffer.byteLength("pretend smaller pdf bytes"),
     );
@@ -269,7 +314,7 @@ describe("convert.service compressPdf", () => {
         os.tmpdir(),
         `convert-service-compress-${quality}-${Date.now()}.pdf`,
       );
-      await fs.writeFile(inputPath, "pretend original pdf bytes");
+      await fs.writeFile(inputPath, VALID_PDF_CONTENT);
       tmpInputs.push(inputPath);
 
       mockedCompressWithGhostscript.mockImplementation(
@@ -294,7 +339,7 @@ describe("convert.service compressPdf", () => {
       os.tmpdir(),
       `convert-service-compress-err-${Date.now()}.pdf`,
     );
-    await fs.writeFile(inputPath, "pretend original pdf bytes");
+    await fs.writeFile(inputPath, VALID_PDF_CONTENT);
     tmpInputs.push(inputPath);
 
     mockedCompressWithGhostscript.mockRejectedValue(new Error("gs exploded"));
@@ -302,5 +347,33 @@ describe("convert.service compressPdf", () => {
     await expect(compressPdf(inputPath, "original.pdf")).rejects.toThrow(
       "gs exploded",
     );
+  });
+
+  it("rejects a file whose content doesn't match a pdf's signature", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-compress-badsig-${Date.now()}.pdf`,
+    );
+    await fs.writeFile(inputPath, "this is plain text, not a real pdf");
+    tmpInputs.push(inputPath);
+
+    await expect(compressPdf(inputPath, "original.pdf")).rejects.toBeInstanceOf(
+      UnsupportedMediaTypeException,
+    );
+    expect(mockedCompressWithGhostscript).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty file before invoking Ghostscript", async () => {
+    const inputPath = path.join(
+      os.tmpdir(),
+      `convert-service-compress-empty-${Date.now()}.pdf`,
+    );
+    await fs.writeFile(inputPath, "");
+    tmpInputs.push(inputPath);
+
+    await expect(compressPdf(inputPath, "original.pdf")).rejects.toBeInstanceOf(
+      UnsupportedMediaTypeException,
+    );
+    expect(mockedCompressWithGhostscript).not.toHaveBeenCalled();
   });
 });
