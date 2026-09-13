@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+jest.mock("dotenv/config", () => ({}));
+
 type EnvModule = typeof import("../../../src/config/env");
 
 describe("config/env", () => {
@@ -67,7 +69,7 @@ describe("config/env", () => {
     expect(env.nodeEnv).toBe("development");
     expect(env.port).toBe(3000);
     expect(env.logLevel).toBe("info");
-    expect(env.corsOrigin).toBe("http://localhost:5173/");
+    expect(env.corsOrigin).toBe("*");
     expect(env.maxUploadBytes).toBe(50 * 1024 * 1024);
     expect(env.libreofficeTimeoutMs).toBe(60_000);
     expect(env.ghostscriptTimeoutMs).toBe(60_000);
