@@ -63,7 +63,7 @@ const FOOTER_NOTES: Record<ToolId, string> = {
   "word-to-pdf":
     "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
   "pdf-to-word":
-    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
+    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored. PDFs with Arabic, Hebrew, or other right-to-left text may convert into a messy or unstable Word document, a known limitation of the underlying conversion engine.",
   "compress-pdf":
     "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
 };
