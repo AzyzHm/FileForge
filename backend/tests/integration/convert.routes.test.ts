@@ -98,6 +98,53 @@ describe("POST /api/v1/convert/dummy", () => {
     expect(wasDeleted).toBe(true);
   });
 
+  it("rejects an empty (0-byte) file with a 400", async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/convert/dummy")
+      .attach("file", Buffer.alloc(0), "empty.txt");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects an upload sent under the wrong multipart field name with a 400", async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/convert/dummy")
+      .attach("document", Buffer.from("hello"), "sample.txt");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects more than one file in the same request with a 400", async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/convert/dummy")
+      .attach("file", Buffer.from("first"), "first.txt")
+      .attach("file", Buffer.from("second"), "second.txt");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects other malformed-multipart Multer errors (e.g. an oversized text field) with a 400", async () => {
+    const app = createApp();
+    const oversizedField = "x".repeat(2 * 1024 * 1024); // over multer's default 1 MB field-value limit
+
+    const response = await request(app)
+      .post("/api/v1/convert/dummy")
+      .field("note", oversizedField)
+      .attach("file", Buffer.from("hello"), "sample.txt");
+
+    expect(response.status).toBe(400);
+    expect(response.body.status).toBe("error");
+  });
+
   it("processes concurrent uploads one at a time through the shared queue", async () => {
     const app = createApp();
 
@@ -160,6 +207,39 @@ describeIfSoffice("POST /api/v1/convert/word-to-pdf", () => {
     expect(response.status).toBe(415);
     expect(response.body.status).toBe("error");
   });
+
+  it("rejects a .docx-named file whose content isn't actually a docx with a 415", async () => {
+    const app = createApp();
+    const txtBuffer = await fs.readFile(SAMPLE_TXT);
+
+    const response = await request(app)
+      .post("/api/v1/convert/word-to-pdf")
+      .attach("file", txtBuffer, "renamed.docx");
+
+    expect(response.status).toBe(415);
+    expect(response.body.status).toBe("error");
+  });
+
+  it(
+    "rejects a structurally invalid docx (valid zip signature, not a real document) with a 422",
+    async () => {
+      const app = createApp();
+      // Valid ZIP/OOXML magic bytes so it clears the signature check, but
+      // not a real docx internally, so LibreOffice itself rejects it.
+      const fakeDocx = Buffer.concat([
+        Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+        Buffer.from("not actually a valid docx body"),
+      ]);
+
+      const response = await request(app)
+        .post("/api/v1/convert/word-to-pdf")
+        .attach("file", fakeDocx, "corrupt.docx");
+
+      expect(response.status).toBe(422);
+      expect(response.body.status).toBe("error");
+    },
+    LIBREOFFICE_CONVERSION_TIMEOUT_MS,
+  );
 
   it("rejects a request with no file attached", async () => {
     const app = createApp();
@@ -224,6 +304,18 @@ describeIfSoffice("POST /api/v1/convert/pdf-to-word", () => {
     const response = await request(app)
       .post("/api/v1/convert/pdf-to-word")
       .attach("file", docxBuffer, "sample.docx");
+
+    expect(response.status).toBe(415);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects a .pdf-named file whose content isn't actually a pdf with a 415", async () => {
+    const app = createApp();
+    const txtBuffer = await fs.readFile(SAMPLE_TXT);
+
+    const response = await request(app)
+      .post("/api/v1/convert/pdf-to-word")
+      .attach("file", txtBuffer, "renamed.pdf");
 
     expect(response.status).toBe(415);
     expect(response.body.status).toBe("error");
@@ -314,6 +406,29 @@ describeIfGhostscript("POST /api/v1/convert/compress-pdf", () => {
       .attach("file", docxBuffer, "sample.docx");
 
     expect(response.status).toBe(415);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects a .pdf-named file whose content isn't actually a pdf with a 415", async () => {
+    const app = createApp();
+    const txtBuffer = await fs.readFile(SAMPLE_TXT);
+
+    const response = await request(app)
+      .post("/api/v1/convert/compress-pdf")
+      .attach("file", txtBuffer, "renamed.pdf");
+
+    expect(response.status).toBe(415);
+    expect(response.body.status).toBe("error");
+  });
+
+  it("rejects an empty (0-byte) file with a 400", async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/convert/compress-pdf")
+      .attach("file", Buffer.alloc(0), "empty.pdf");
+
+    expect(response.status).toBe(400);
     expect(response.body.status).toBe("error");
   });
 
