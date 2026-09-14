@@ -6,20 +6,22 @@ import {
   FileInput,
   FileOutput,
   Image as ImageIcon,
+  Menu,
   Minimize2,
   Scissors,
   type LucideIcon,
 } from "lucide-react";
 import { BackgroundRemovalPanel } from "./components/BackgroundRemovalPanel";
 import { CompressionPanel } from "./components/CompressionPanel";
+import { IconButton } from "./components/IconButton";
 import { ImageConverterPanel } from "./components/ImageConverterPanel";
 import { PdfCompressionPanel } from "./components/PdfCompressionPanel";
 import { PdfMergePanel } from "./components/PdfMergePanel";
 import { PdfSplitPanel } from "./components/PdfSplitPanel";
 import { PdfToWordPanel } from "./components/PdfToWordPanel";
+import { Sidebar } from "./components/Sidebar";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
-import { ToolTabs } from "./components/ToolTabs";
 import { WordToPdfPanel } from "./components/WordToPdfPanel";
 
 type ToolId =
@@ -83,12 +85,25 @@ const FOOTER_NOTES: Record<ToolId, string> = {
 
 function AppShell() {
   const [activeTool, setActiveTool] = useState<ToolId>("images");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const activeToolMeta = TOOLS.find((tool) => tool.id === activeTool)!;
+  const ActiveIcon = activeToolMeta.icon;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <IconButton
+              icon={Menu}
+              onClick={() => setIsSidebarOpen((open) => !open)}
+              aria-label={
+                isSidebarOpen ? "Close tools menu" : "Open tools menu"
+              }
+              className="shrink-0"
+            />
+
             <img
               src="/logo.png"
               alt=""
@@ -108,18 +123,32 @@ function AppShell() {
         </div>
       </header>
 
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        tools={TOOLS}
+        activeId={activeTool}
+        onSelect={(id) => {
+          setActiveTool(id);
+          setIsSidebarOpen(false);
+        }}
+      />
+
       <div className="mx-auto flex max-w-3xl flex-col px-4 py-6 sm:py-10">
+        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <ActiveIcon
+            aria-hidden
+            size={16}
+            strokeWidth={2.25}
+            className="text-brand-600 dark:text-brand-400"
+          />
+          {activeToolMeta.label}
+        </div>
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
           {DESCRIPTIONS[activeTool]}
         </p>
 
-        <ToolTabs
-          tools={TOOLS}
-          activeId={activeTool}
-          onChange={(id) => setActiveTool(id as ToolId)}
-        />
-
-        <main className="mt-6 flex-1">
+        <main className="flex-1">
           {activeTool === "images" && <ImageConverterPanel />}
           {activeTool === "compress" && <CompressionPanel />}
           {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
