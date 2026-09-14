@@ -1,4 +1,5 @@
 import { useCallback, useId, useRef, useState } from "react";
+import { UploadCloud } from "lucide-react";
 
 interface DropzoneProps {
   onFiles: (files: FileList) => void;
@@ -48,17 +49,27 @@ export function Dropzone({
       }}
       onDragLeave={() => setIsDragActive(false)}
       onDrop={handleDrop}
-      className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors ${
+      className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-all ${
         isDragActive
-          ? "border-emerald-600 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/30"
-          : "border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40"
+          ? "scale-[1.01] border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-950/30"
+          : "border-slate-300 bg-slate-50/70 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:border-slate-600"
       }`}
     >
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
+          isDragActive
+            ? "bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300"
+            : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+        }`}
+      >
+        <UploadCloud aria-hidden size={20} strokeWidth={2} />
+      </div>
+
       <p className="text-sm text-slate-600 dark:text-slate-300">
         {label}{" "}
         <label
           htmlFor={inputId}
-          className="cursor-pointer font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+          className="cursor-pointer font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300"
         >
           browse your files
         </label>
