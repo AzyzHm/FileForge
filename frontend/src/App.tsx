@@ -1,4 +1,15 @@
 import { useState } from "react";
+import {
+  Combine,
+  Eraser,
+  FileArchive,
+  FileInput,
+  FileOutput,
+  Image as ImageIcon,
+  Minimize2,
+  Scissors,
+  type LucideIcon,
+} from "lucide-react";
 import { BackgroundRemovalPanel } from "./components/BackgroundRemovalPanel";
 import { CompressionPanel } from "./components/CompressionPanel";
 import { ImageConverterPanel } from "./components/ImageConverterPanel";
@@ -6,6 +17,8 @@ import { PdfCompressionPanel } from "./components/PdfCompressionPanel";
 import { PdfMergePanel } from "./components/PdfMergePanel";
 import { PdfSplitPanel } from "./components/PdfSplitPanel";
 import { PdfToWordPanel } from "./components/PdfToWordPanel";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { ToolTabs } from "./components/ToolTabs";
 import { WordToPdfPanel } from "./components/WordToPdfPanel";
 
@@ -19,15 +32,15 @@ type ToolId =
   | "pdf-to-word"
   | "compress-pdf";
 
-const TOOLS: { id: ToolId; label: string }[] = [
-  { id: "images", label: "Images" },
-  { id: "compress", label: "Compress" },
-  { id: "remove-bg", label: "Remove BG" },
-  { id: "pdf-merge", label: "Merge PDFs" },
-  { id: "pdf-split", label: "Split PDF" },
-  { id: "word-to-pdf", label: "Word to PDF" },
-  { id: "pdf-to-word", label: "PDF to Word" },
-  { id: "compress-pdf", label: "Compress PDF" },
+const TOOLS: { id: ToolId; label: string; icon: LucideIcon }[] = [
+  { id: "images", label: "Images", icon: ImageIcon },
+  { id: "compress", label: "Compress", icon: Minimize2 },
+  { id: "remove-bg", label: "Remove BG", icon: Eraser },
+  { id: "pdf-merge", label: "Merge PDFs", icon: Combine },
+  { id: "pdf-split", label: "Split PDF", icon: Scissors },
+  { id: "word-to-pdf", label: "Word to PDF", icon: FileOutput },
+  { id: "pdf-to-word", label: "PDF to Word", icon: FileInput },
+  { id: "compress-pdf", label: "Compress PDF", icon: FileArchive },
 ];
 
 const DESCRIPTIONS: Record<ToolId, string> = {
@@ -68,20 +81,37 @@ const FOOTER_NOTES: Record<ToolId, string> = {
     "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
 };
 
-function App() {
+function AppShell() {
   const [activeTool, setActiveTool] = useState<ToolId>("images");
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-12">
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-            FileForge
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {DESCRIPTIONS[activeTool]}
-          </p>
-        </header>
+      <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <img
+              src="/logo.png"
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-lg shadow-sm"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+                FileForge
+              </h1>
+              <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
+                Convert files, right in your browser.
+              </p>
+            </div>
+          </div>
+
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <div className="mx-auto flex max-w-3xl flex-col px-4 py-6 sm:py-10">
+        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+          {DESCRIPTIONS[activeTool]}
+        </p>
 
         <ToolTabs
           tools={TOOLS}
@@ -105,6 +135,14 @@ function App() {
         </footer>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
   );
 }
 
