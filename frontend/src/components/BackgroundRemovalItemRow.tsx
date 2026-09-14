@@ -1,4 +1,10 @@
+import { Eraser, X } from "lucide-react";
+import { Button } from "./Button";
+import { DownloadButton } from "./DownloadButton";
+import { FileAvatar } from "./FileAvatar";
+import { IconButton } from "./IconButton";
 import { useObjectUrl } from "../hooks/useObjectUrl";
+import { formatFileSize } from "../utils/formatFileSize";
 import type {
   BackgroundRemovalItem,
   BackgroundRemovalResult,
@@ -17,19 +23,11 @@ const CHECKERBOARD_STYLE = {
   backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0",
 };
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function ResultPreview({ result }: { result: BackgroundRemovalResult }) {
   const previewUrl = useObjectUrl(result.file);
 
   if (!previewUrl) {
-    return (
-      <div className="h-12 w-12 shrink-0 rounded-md bg-slate-100 dark:bg-slate-800" />
-    );
+    return <FileAvatar icon={Eraser} />;
   }
 
   return (
@@ -37,30 +35,8 @@ function ResultPreview({ result }: { result: BackgroundRemovalResult }) {
       src={previewUrl}
       alt={`${result.fileName} with the background removed`}
       style={CHECKERBOARD_STYLE}
-      className="h-12 w-12 shrink-0 rounded-md object-cover"
+      className="h-10 w-10 shrink-0 rounded-xl object-cover"
     />
-  );
-}
-
-function DownloadLink({ result }: { result: BackgroundRemovalResult }) {
-  const downloadUrl = useObjectUrl(result.file);
-
-  if (!downloadUrl) {
-    return (
-      <span className="rounded-md px-3 py-1 text-sm text-slate-400">
-        Preparing…
-      </span>
-    );
-  }
-
-  return (
-    <a
-      href={downloadUrl}
-      download={result.fileName}
-      className="rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
-    >
-      Download
-    </a>
   );
 }
 
@@ -70,12 +46,12 @@ export function BackgroundRemovalItemRow({
   onRemove,
 }: BackgroundRemovalItemRowProps) {
   return (
-    <li className="flex flex-col gap-3 border-b border-slate-200 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {item.status === "done" && item.result ? (
           <ResultPreview result={item.result} />
         ) : (
-          <div className="h-12 w-12 shrink-0 rounded-md bg-slate-100 dark:bg-slate-800" />
+          <FileAvatar icon={Eraser} />
         )}
 
         <div className="min-w-0">
@@ -88,7 +64,7 @@ export function BackgroundRemovalItemRow({
           {item.status === "processing" && (
             <div className="mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
-                className="h-full rounded-full bg-emerald-600 transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all"
                 style={{ width: `${item.progress}%` }}
               />
             </div>
@@ -103,30 +79,28 @@ export function BackgroundRemovalItemRow({
 
       <div className="flex shrink-0 items-center gap-2">
         {item.status === "done" && item.result ? (
-          <DownloadLink result={item.result} />
+          <DownloadButton
+            blob={item.result.file}
+            fileName={item.result.fileName}
+          />
         ) : (
-          <button
-            type="button"
+          <Button
             onClick={() => onProcess(item)}
             disabled={item.status === "processing"}
-            className="rounded-md bg-slate-800 px-3 py-1 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
           >
             {item.status === "processing"
               ? `Processing… ${item.progress}%`
               : item.status === "error"
                 ? "Retry"
                 : "Remove background"}
-          </button>
+          </Button>
         )}
 
-        <button
-          type="button"
+        <IconButton
+          icon={X}
           onClick={() => onRemove(item.id)}
           aria-label={`Remove ${item.file.name}`}
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-        >
-          &times;
-        </button>
+        />
       </div>
     </li>
   );
