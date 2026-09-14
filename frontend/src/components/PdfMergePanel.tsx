@@ -1,36 +1,12 @@
 import { useState } from "react";
+import { ArrowDown, ArrowUp, FileText, X } from "lucide-react";
+import { Card } from "./Card";
+import { DownloadButton } from "./DownloadButton";
 import { Dropzone } from "./Dropzone";
+import { FileListHeader } from "./FileListHeader";
+import { IconButton } from "./IconButton";
 import { usePdfMerge } from "../hooks/usePdfMerge";
-import { useObjectUrl } from "../hooks/useObjectUrl";
-
-interface MergeResult {
-  blob: Blob;
-  fileName: string;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function MergeDownloadLink({ result }: { result: MergeResult }) {
-  const downloadUrl = useObjectUrl(result.blob);
-
-  if (!downloadUrl) {
-    return <span className="text-sm text-slate-400">Preparing…</span>;
-  }
-
-  return (
-    <a
-      href={downloadUrl}
-      download={result.fileName}
-      className="inline-block rounded-md bg-emerald-700 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-800"
-    >
-      Download {result.fileName}
-    </a>
-  );
-}
+import { formatFileSize } from "../utils/formatFileSize";
 
 export function PdfMergePanel() {
   const {
@@ -71,71 +47,55 @@ export function PdfMergePanel() {
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {items.length} {items.length === 1 ? "file" : "files"}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => void merge()}
-                disabled={!canMerge}
-                className="text-sm font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-40 dark:text-emerald-400 dark:hover:text-emerald-300"
-              >
-                {status === "processing" ? "Merging…" : "Merge"}
-              </button>
-              <button
-                type="button"
-                onClick={reset}
-                className="text-sm font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
+        <Card>
+          <FileListHeader
+            count={items.length}
+            primaryLabel={status === "processing" ? "Merging…" : "Merge"}
+            onPrimary={() => void merge()}
+            primaryDisabled={!canMerge}
+            onClear={reset}
+          />
 
-          <ul className="px-4">
+          <ul className="divide-y divide-slate-200 px-4 dark:divide-slate-800">
             {items.map((item, index) => (
               <li
                 key={item.id}
-                className="flex items-center justify-between gap-3 border-b border-slate-200 py-3 last:border-b-0 dark:border-slate-800"
+                className="flex items-center justify-between gap-3 py-3"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {index + 1}. {item.file.name}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {formatFileSize(item.file.size)}
-                  </p>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <FileText
+                    aria-hidden
+                    size={18}
+                    strokeWidth={2}
+                    className="shrink-0 text-brand-600 dark:text-brand-300"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {index + 1}. {item.file.name}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {formatFileSize(item.file.size)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
+                <div className="flex shrink-0 items-center gap-1">
+                  <IconButton
+                    icon={ArrowUp}
                     onClick={() => moveItem(item.id, "up")}
                     disabled={index === 0}
                     aria-label={`Move ${item.file.name} up`}
-                    className="text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
-                  >
-                    &uarr;
-                  </button>
-                  <button
-                    type="button"
+                  />
+                  <IconButton
+                    icon={ArrowDown}
                     onClick={() => moveItem(item.id, "down")}
                     disabled={index === items.length - 1}
                     aria-label={`Move ${item.file.name} down`}
-                    className="text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
-                  >
-                    &darr;
-                  </button>
-                  <button
-                    type="button"
+                  />
+                  <IconButton
+                    icon={X}
                     onClick={() => removeItem(item.id)}
                     aria-label={`Remove ${item.file.name}`}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  >
-                    &times;
-                  </button>
+                  />
                 </div>
               </li>
             ))}
@@ -149,10 +109,14 @@ export function PdfMergePanel() {
 
           {status === "done" && result && (
             <div className="border-t border-slate-200 px-4 py-3 dark:border-slate-800">
-              <MergeDownloadLink result={result} />
+              <DownloadButton
+                blob={result.blob}
+                fileName={result.fileName}
+                label={`Download ${result.fileName}`}
+              />
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

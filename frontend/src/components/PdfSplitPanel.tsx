@@ -1,19 +1,27 @@
 import { useState } from "react";
+import { X } from "lucide-react";
+import { Button } from "./Button";
+import { Card } from "./Card";
 import { Dropzone } from "./Dropzone";
+import { IconButton } from "./IconButton";
 import { PdfSplitPageRow } from "./PdfSplitPageRow";
+import { SegmentedControl } from "./SegmentedControl";
 import { usePdfSplit } from "../hooks/usePdfSplit";
+import { formatFileSize } from "../utils/formatFileSize";
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+const MODE_OPTIONS = [
+  { id: "all" as const, label: "Every page" },
+  { id: "range" as const, label: "Page ranges" },
+];
 
 function parseInputNumber(value: string): number | "" {
   if (value === "") return "";
   const parsed = Number(value);
   return Number.isNaN(parsed) ? "" : parsed;
 }
+
+const inputClasses =
+  "w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm text-slate-800 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
 
 export function PdfSplitPanel() {
   const {
@@ -60,8 +68,8 @@ export function PdfSplitPanel() {
       )}
 
       {file && (
-        <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
+        <Card>
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
                 {file.name}
@@ -71,48 +79,19 @@ export function PdfSplitPanel() {
                 {pageCount ? ` · ${pageCount} pages` : ""}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={reset}
-              className="shrink-0 text-sm font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            >
+            <Button variant="ghost" onClick={reset} className="shrink-0">
               Clear
-            </button>
+            </Button>
           </div>
 
-          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-            <div
-              role="radiogroup"
-              aria-label="Split mode"
-              className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-900"
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === "all"}
-                onClick={() => setMode("all")}
-                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === "all"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
-              >
-                Every page
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === "range"}
-                onClick={() => setMode("range")}
-                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === "range"
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
-              >
-                Page ranges
-              </button>
-            </div>
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+            <SegmentedControl
+              as="radiogroup"
+              ariaLabel="Split mode"
+              options={MODE_OPTIONS}
+              activeId={mode}
+              onChange={setMode}
+            />
 
             {mode === "range" && (
               <div className="flex flex-col gap-2">
@@ -139,7 +118,7 @@ export function PdfSplitPanel() {
                           parseInputNumber(event.target.value),
                         )
                       }
-                      className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800 focus:border-emerald-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={inputClasses}
                     />
 
                     <span className="text-xs text-slate-400">to</span>
@@ -161,28 +140,25 @@ export function PdfSplitPanel() {
                           parseInputNumber(event.target.value),
                         )
                       }
-                      className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800 focus:border-emerald-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      className={inputClasses}
                     />
 
-                    <button
-                      type="button"
+                    <IconButton
+                      icon={X}
                       onClick={() => removeRangeRow(row.id)}
                       disabled={rangeRows.length === 1}
                       aria-label={`Remove range ${index + 1}`}
-                      className="text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
-                    >
-                      &times;
-                    </button>
+                    />
                   </div>
                 ))}
 
-                <button
-                  type="button"
+                <Button
+                  variant="link"
                   onClick={addRangeRow}
-                  className="self-start text-xs font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                  className="self-start"
                 >
                   + Add another range
-                </button>
+                </Button>
 
                 <p className="text-xs text-slate-400">
                   {pageCount
@@ -192,14 +168,14 @@ export function PdfSplitPanel() {
               </div>
             )}
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => void split()}
               disabled={!canSplit}
-              className="self-start text-sm font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-40 dark:text-emerald-400 dark:hover:text-emerald-300"
+              className="self-start"
             >
               {status === "processing" ? "Splitting…" : "Split"}
-            </button>
+            </Button>
           </div>
 
           {error && (
@@ -209,7 +185,7 @@ export function PdfSplitPanel() {
           )}
 
           {status === "done" && pages.length > 0 && (
-            <ul className="px-4">
+            <ul className="divide-y divide-slate-200 px-4 dark:divide-slate-800">
               {pages.map((page, index) => (
                 <PdfSplitPageRow
                   key={`${index}-${page.fileName}`}
@@ -218,7 +194,7 @@ export function PdfSplitPanel() {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
