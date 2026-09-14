@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Card } from "./Card";
 import { Dropzone } from "./Dropzone";
+import { FileListHeader } from "./FileListHeader";
 import { WordToPdfItemRow } from "./WordToPdfItemRow";
 import { useWordToPdf } from "../hooks/useWordToPdf";
 
@@ -36,30 +38,15 @@ export function WordToPdfPanel() {
       )}
 
       {hasItems && (
-        <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {items.length} {items.length === 1 ? "file" : "files"}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => void convertAll()}
-                disabled={!hasConvertibleItems}
-                className="text-sm font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-40 dark:text-emerald-400 dark:hover:text-emerald-300"
-              >
-                Convert all
-              </button>
-              <button
-                type="button"
-                onClick={reset}
-                className="text-sm font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-          <ul className="px-4">
+        <Card>
+          <FileListHeader
+            count={items.length}
+            primaryLabel="Convert all"
+            onPrimary={() => void convertAll()}
+            primaryDisabled={!hasConvertibleItems}
+            onClear={reset}
+          />
+          <ul className="divide-y divide-slate-200 px-4 dark:divide-slate-800">
             {items.map((item) => (
               <WordToPdfItemRow
                 key={item.id}
@@ -69,7 +56,7 @@ export function WordToPdfPanel() {
               />
             ))}
           </ul>
-        </div>
+        </Card>
       )}
     </div>
   );
