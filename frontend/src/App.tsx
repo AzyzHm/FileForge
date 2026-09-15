@@ -11,18 +11,18 @@ import {
   Scissors,
   type LucideIcon,
 } from "lucide-react";
-import { BackgroundRemovalPanel } from "./components/BackgroundRemovalPanel";
-import { CompressionPanel } from "./components/CompressionPanel";
+import { BackgroundRemovalPanel } from "./features/background-removal/BackgroundRemovalPanel";
+import { CompressionPanel } from "./features/image-compression/CompressionPanel";
 import { IconButton } from "./components/IconButton";
-import { ImageConverterPanel } from "./components/ImageConverterPanel";
-import { PdfCompressionPanel } from "./components/PdfCompressionPanel";
-import { PdfMergePanel } from "./components/PdfMergePanel";
-import { PdfSplitPanel } from "./components/PdfSplitPanel";
-import { PdfToWordPanel } from "./components/PdfToWordPanel";
+import { ImageConverterPanel } from "./features/image-conversion/ImageConverterPanel";
+import { PdfCompressionPanel } from "./features/pdf-compression/PdfCompressionPanel";
+import { PdfMergePanel } from "./features/pdf-merge/PdfMergePanel";
+import { PdfSplitPanel } from "./features/pdf-split/PdfSplitPanel";
+import { PdfToWordPanel } from "./features/pdf-to-word/PdfToWordPanel";
 import { Sidebar } from "./components/Sidebar";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
-import { WordToPdfPanel } from "./components/WordToPdfPanel";
+import { WordToPdfPanel } from "./features/word-to-pdf/WordToPdfPanel";
 
 type ToolId =
   | "images"
