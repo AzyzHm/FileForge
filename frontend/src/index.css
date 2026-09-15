@@ -1,11 +1,83 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --color-brand-50: oklch(97.5% 0.02 195);
+  --color-brand-100: oklch(94% 0.045 195);
+  --color-brand-200: oklch(88% 0.08 195);
+  --color-brand-300: oklch(79% 0.1 195);
+  --color-brand-400: oklch(69% 0.11 197);
+  --color-brand-500: oklch(60% 0.11 200);
+  --color-brand-600: oklch(51% 0.1 217);
+  --color-brand-700: oklch(43% 0.09 227);
+  --color-brand-800: oklch(36% 0.075 232);
+  --color-brand-900: oklch(30% 0.06 235);
+  --color-brand-950: oklch(21% 0.045 240);
+}
+
 @layer base {
   :root {
     color-scheme: light dark;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   body {
-    @apply bg-white text-slate-800 antialiased dark:bg-slate-900 dark:text-slate-100;
+    @apply bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-950 dark:bg-brand-800 dark:text-white;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-slate-300) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: var(--color-slate-700) transparent;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scroll-fade-x {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 16px,
+      black calc(100% - 16px),
+      transparent
+    );
   }
 }
