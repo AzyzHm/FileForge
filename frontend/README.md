@@ -52,6 +52,14 @@ All three server-backed tools go through `src/services/apiClient.ts`, a shared u
 
 ---
 
+## Interface
+
+All eight tools live behind a collapsible sidebar, opened with the menu button in the header. Selecting a tool switches the active panel and closes the sidebar. The app lands on Image Conversion by default.
+
+Light, dark, and system theme are available from the toggle in the header. The choice is saved to `localStorage`, and a small init script in `index.html` applies it before React mounts, so there's no flash of the wrong theme on load. The color scale is a brand teal-to-blue OKLCH palette defined in `src/index.css` via Tailwind v4's `@theme` and `@custom-variant dark`.
+
+---
+
 ## Testing
 
 ```bash
@@ -81,17 +89,32 @@ jsdom's `Blob`/`Response` implementation is missing `.stream()`, which MSW needs
 
 ## Project structure
 
+The app is organized by feature. Each tool owns its panel, item row, hook, service, and types together in one folder. Code shared across more than one feature lives at the top level of `src/`.
+
 ```
 frontend/
 ├── src/
-│   ├── components/   # UI, one panel + item row per tool
-│   ├── hooks/         # Per-tool state and orchestration
-│   ├── services/      # Conversion logic: client-side libraries or backend calls
-│   ├── types/          # Per-tool TypeScript types
-│   ├── utils/           # Small shared helpers
-│   └── App.tsx           # Tool tabs, descriptions, and footer notes
+│   ├── features/
+│   │   ├── image-conversion/
+│   │   ├── image-compression/
+│   │   ├── background-removal/
+│   │   ├── pdf-merge/
+│   │   ├── pdf-split/
+│   │   ├── word-to-pdf/
+│   │   ├── pdf-to-word/
+│   │   └── pdf-compression/
+│   │       # Each feature folder holds its own Panel, ItemRow, hook, service,
+│   │       # and types.ts, colocated together
+│   ├── components/    # Shared UI primitives: Button, Card, Sidebar, Dropzone,
+│   │                   # theme components, and more
+│   ├── hooks/          # Shared hooks, e.g. useObjectUrl
+│   ├── services/       # Shared services: apiClient.ts (backend calls) and
+│   │                    # pdfService.ts (used by all four PDF features)
+│   ├── types/           # Shared TypeScript types, e.g. ProcessingStatus
+│   ├── utils/            # Small shared helpers
+│   └── App.tsx            # Sidebar navigation and tool switching
 └── tests/
-    ├── setup/            # Vitest setup, MSW server, HTTP polyfill
-    ├── unit/              # Service-level tests
-    └── integration/       # Component-level tests via Testing Library
+    ├── setup/             # Vitest setup, MSW server, HTTP polyfill
+    ├── features/           # Tests mirroring src/features/<name>/
+    └── services/            # Tests for the shared services
 ```
