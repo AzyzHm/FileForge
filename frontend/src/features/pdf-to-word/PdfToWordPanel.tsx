@@ -37,6 +37,12 @@ export function PdfToWordPanel() {
         </p>
       )}
 
+      <p className="text-xs text-slate-400 dark:text-slate-600">
+        PDFs with Arabic, Hebrew, or other right-to-left text may convert into a
+        messy or unstable Word document, a known limitation of the underlying
+        conversion engine.
+      </p>
+
       {hasItems && (
         <Card>
           <FileListHeader

@@ -50,6 +50,8 @@ npm scripts that set inline environment variables (the test scripts below) use `
 
 See `.env.example` for the same list with inline comments.
 
+> **`CORS_ORIGIN` must match the browser's `Origin` header exactly, including no trailing slash.** The `cors` package doesn't normalize this value; it echoes back whatever string is set. A value like `http://localhost:5173/` (trailing slash) does not match the `http://localhost:5173` a browser actually sends, so the browser will reject the response even though the server processed it. This means the three server-backed frontend tools (Word to PDF, PDF to Word, Compress PDF) will look like they're failing, when the real problem is a mismatched `CORS_ORIGIN` value.
+
 ---
 
 ## API
