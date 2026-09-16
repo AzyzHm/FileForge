@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   Combine,
   Eraser,
@@ -11,18 +11,51 @@ import {
   Scissors,
   type LucideIcon,
 } from "lucide-react";
-import { BackgroundRemovalPanel } from "./features/background-removal/BackgroundRemovalPanel";
-import { CompressionPanel } from "./features/image-compression/CompressionPanel";
 import { IconButton } from "./components/IconButton";
-import { ImageConverterPanel } from "./features/image-conversion/ImageConverterPanel";
-import { PdfCompressionPanel } from "./features/pdf-compression/PdfCompressionPanel";
-import { PdfMergePanel } from "./features/pdf-merge/PdfMergePanel";
-import { PdfSplitPanel } from "./features/pdf-split/PdfSplitPanel";
-import { PdfToWordPanel } from "./features/pdf-to-word/PdfToWordPanel";
 import { Sidebar } from "./components/Sidebar";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
-import { WordToPdfPanel } from "./features/word-to-pdf/WordToPdfPanel";
+
+const ImageConverterPanel = lazy(() =>
+  import("./features/image-conversion/ImageConverterPanel").then((m) => ({
+    default: m.ImageConverterPanel,
+  })),
+);
+const CompressionPanel = lazy(() =>
+  import("./features/image-compression/CompressionPanel").then((m) => ({
+    default: m.CompressionPanel,
+  })),
+);
+const BackgroundRemovalPanel = lazy(() =>
+  import("./features/background-removal/BackgroundRemovalPanel").then((m) => ({
+    default: m.BackgroundRemovalPanel,
+  })),
+);
+const PdfMergePanel = lazy(() =>
+  import("./features/pdf-merge/PdfMergePanel").then((m) => ({
+    default: m.PdfMergePanel,
+  })),
+);
+const PdfSplitPanel = lazy(() =>
+  import("./features/pdf-split/PdfSplitPanel").then((m) => ({
+    default: m.PdfSplitPanel,
+  })),
+);
+const WordToPdfPanel = lazy(() =>
+  import("./features/word-to-pdf/WordToPdfPanel").then((m) => ({
+    default: m.WordToPdfPanel,
+  })),
+);
+const PdfToWordPanel = lazy(() =>
+  import("./features/pdf-to-word/PdfToWordPanel").then((m) => ({
+    default: m.PdfToWordPanel,
+  })),
+);
+const PdfCompressionPanel = lazy(() =>
+  import("./features/pdf-compression/PdfCompressionPanel").then((m) => ({
+    default: m.PdfCompressionPanel,
+  })),
+);
 
 type ToolId =
   | "images"
@@ -45,47 +78,9 @@ const TOOLS: { id: ToolId; label: string; icon: LucideIcon }[] = [
   { id: "compress-pdf", label: "Compress PDF", icon: FileArchive },
 ];
 
-const DESCRIPTIONS: Record<ToolId, string> = {
-  images:
-    "Convert images between PNG, JPG, and SVG. Everything runs in your browser, nothing is uploaded anywhere.",
-  compress:
-    "Shrink PNG and JPG file sizes. Everything runs in your browser, nothing is uploaded anywhere.",
-  "remove-bg":
-    "Remove the background from a photo using an on-device AI model. Everything runs in your browser, nothing is uploaded anywhere.",
-  "pdf-merge":
-    "Combine PDFs into one file, in the order you choose. Everything runs in your browser, nothing is uploaded anywhere.",
-  "pdf-split":
-    "Split a PDF into one file per page. Everything runs in your browser, nothing is uploaded anywhere.",
-  "word-to-pdf":
-    "Convert a Word document to PDF using the FileForge server, for accurate, LibreOffice-rendered output.",
-  "pdf-to-word":
-    "Convert a PDF into an editable Word document, using the FileForge server.",
-  "compress-pdf":
-    "Shrink a PDF's file size using the FileForge server, with a choice of quality presets.",
-};
-
-const FOOTER_NOTES: Record<ToolId, string> = {
-  images:
-    "No files leave your device. FileForge processes everything locally in your browser.",
-  compress:
-    "No files leave your device. FileForge processes everything locally in your browser.",
-  "remove-bg":
-    "No files leave your device. FileForge processes everything locally in your browser.",
-  "pdf-merge":
-    "No files leave your device. FileForge processes everything locally in your browser.",
-  "pdf-split":
-    "No files leave your device. FileForge processes everything locally in your browser.",
-  "word-to-pdf":
-    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
-  "pdf-to-word":
-    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored. PDFs with Arabic, Hebrew, or other right-to-left text may convert into a messy or unstable Word document, a known limitation of the underlying conversion engine.",
-  "compress-pdf":
-    "This tool sends your file to the FileForge server for conversion. It's deleted immediately afterward and never stored.",
-};
-
 function AppShell() {
   const [activeTool, setActiveTool] = useState<ToolId>("images");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const activeToolMeta = TOOLS.find((tool) => tool.id === activeTool)!;
   const ActiveIcon = activeToolMeta.icon;
@@ -93,7 +88,7 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-2">
             <IconButton
               icon={Menu}
@@ -109,14 +104,9 @@ function AppShell() {
               alt=""
               className="h-8 w-8 shrink-0 rounded-lg shadow-sm"
             />
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-                FileForge
-              </h1>
-              <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
-                Convert files, right in your browser.
-              </p>
-            </div>
+            <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+              FileForge
+            </h1>
           </div>
 
           <ThemeToggle />
@@ -135,7 +125,7 @@ function AppShell() {
       />
 
       <div className="mx-auto flex max-w-3xl flex-col px-4 py-6 sm:py-10">
-        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <div className="mb-6 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
           <ActiveIcon
             aria-hidden
             size={16}
@@ -144,24 +134,25 @@ function AppShell() {
           />
           {activeToolMeta.label}
         </div>
-        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-          {DESCRIPTIONS[activeTool]}
-        </p>
 
         <main className="flex-1">
-          {activeTool === "images" && <ImageConverterPanel />}
-          {activeTool === "compress" && <CompressionPanel />}
-          {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
-          {activeTool === "pdf-merge" && <PdfMergePanel />}
-          {activeTool === "pdf-split" && <PdfSplitPanel />}
-          {activeTool === "word-to-pdf" && <WordToPdfPanel />}
-          {activeTool === "pdf-to-word" && <PdfToWordPanel />}
-          {activeTool === "compress-pdf" && <PdfCompressionPanel />}
+          <Suspense
+            fallback={
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Loading tool…
+              </p>
+            }
+          >
+            {activeTool === "images" && <ImageConverterPanel />}
+            {activeTool === "compress" && <CompressionPanel />}
+            {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
+            {activeTool === "pdf-merge" && <PdfMergePanel />}
+            {activeTool === "pdf-split" && <PdfSplitPanel />}
+            {activeTool === "word-to-pdf" && <WordToPdfPanel />}
+            {activeTool === "pdf-to-word" && <PdfToWordPanel />}
+            {activeTool === "compress-pdf" && <PdfCompressionPanel />}
+          </Suspense>
         </main>
-
-        <footer className="mt-12 text-xs text-slate-400 dark:text-slate-600">
-          {FOOTER_NOTES[activeTool]}
-        </footer>
       </div>
     </div>
   );
