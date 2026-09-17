@@ -6,6 +6,7 @@ services:
     dockerContext: ./backend
     plan: free
     healthCheckPath: /health
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
         value: production
@@ -25,6 +26,7 @@ services:
     rootDir: frontend
     buildCommand: npm run build
     staticPublishPath: dist
+    autoDeployTrigger: checksPass
     envVars:
       - key: VITE_API_BASE_URL
         fromService:
