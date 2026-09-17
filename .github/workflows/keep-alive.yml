@@ -1,0 +1,22 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request health endpoint
+        run: |
+          if [ -z "${{ vars.BACKEND_HEALTH_URL }}" ]; then
+            echo "BACKEND_HEALTH_URL repository variable is not set yet, skipping." 
+            exit 0
+          fi
+          curl --fail --silent --show-error "${{ vars.BACKEND_HEALTH_URL }}"
